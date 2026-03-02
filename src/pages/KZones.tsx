@@ -26,7 +26,7 @@ const KZones = () => {
               onClick={() => setActiveTab(tab)}
               className={`px-5 py-2.5 text-sm font-medium transition-colors relative ${
                 activeTab === tab
-                  ? "bg-background text-foreground rounded-t-lg border border-b-0 border-border -mb-px z-10"
+                  ? "bg-background text-foreground rounded-t-lg border border-b-0 border-border -mb-px z-10 border-t-[3px] border-t-primary"
                   : "text-muted-foreground hover:text-foreground rounded-t-lg hover:bg-background/50"
               }`}
             >
