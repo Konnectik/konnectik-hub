@@ -18,22 +18,23 @@ const KZones = () => {
   return (
     <div>
       {/* Tabs */}
-      <div className="bg-background border-b px-6">
-        <div className="flex items-center gap-1">
+      <div className="bg-muted/60 px-6 pt-2">
+        <div className="flex items-end gap-0.5">
           {tabs.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-5 py-3 text-sm font-medium transition-colors rounded-t-md ${
+              className={`px-5 py-2.5 text-sm font-medium transition-colors relative ${
                 activeTab === tab
-                  ? "bg-secondary text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-background text-foreground rounded-t-lg border border-b-0 border-border -mb-px z-10"
+                  : "text-muted-foreground hover:text-foreground rounded-t-lg hover:bg-background/50"
               }`}
             >
               {tab}
             </button>
           ))}
         </div>
+        <div className="border-b border-border -mx-6" />
       </div>
 
       {/* Content */}
