@@ -31,9 +31,9 @@ const DashboardNav = () => {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors relative ${
                     isActive
-                      ? "bg-primary-foreground text-foreground"
+                      ? "bg-primary-foreground text-foreground border-t-[3px] border-t-foreground"
                       : "hover:bg-primary-foreground/10"
                   }`}
                 >
