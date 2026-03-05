@@ -54,6 +54,10 @@ export default {
           DEFAULT: "hsl(var(--nav-bg))",
           foreground: "hsl(var(--nav-foreground))",
         },
+        "tab-active": {
+          DEFAULT: "hsl(var(--tab-active))",
+          bg: "hsl(var(--tab-active-bg))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",

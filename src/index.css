@@ -39,6 +39,9 @@
     --nav-bg: 0 72% 47%;
     --nav-foreground: 0 0% 100%;
 
+    --tab-active: 227 54% 40%;
+    --tab-active-bg: 235 100% 97.6%;
+
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 0 72% 51%;
