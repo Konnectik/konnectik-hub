@@ -7,7 +7,7 @@ const tabs = ["K-Users", "K-Owners", "K-Admins"];
 const mockUsers = [
     {id: 1, name: "John Doe", walletBalance: 1000, UID: "1234567890", email: "john.doe@example.com", phoneNumber: "+237 123 456 789", date: "21/12/2022", time: "10:40 PM", status: "Online"},
     {id: 2, name: "Jane Smith", walletBalance: 1500, UID: "0987654321", email: "jane.smith@example.com", phoneNumber: "+237 123 456 789", date: "21/12/2022", time: "10:40 PM", status: "Offline"},
-    {id: 3, name: "Bob Johnson", walletBalance: 0, UID: "1122334455", email: "bob.johnson@example.com", phoneNumber: "+237 123 456 789", date: "21/12/2022", time: "10:40 PM",status: "Online"},
+    {id: 3, name: "Bob Johnson", walletBalance: 0, UID: "1122334455", email: "bob.johnson@example.com", phoneNumber: "+237 123 456 789", date: "21/12/2022", time: "10:40 PM", status: "Online"},
 ];
 
 const KUsers = () => {
@@ -38,7 +38,7 @@ const KUsers = () => {
                     ))}
                     </div>
                 <div className="border-b border-border -mx-6" />
-                </div>
+            </div>
 
             {/* Content */}
             <div className="p-6 bg-gray-50 rounded-xl">
@@ -52,57 +52,58 @@ const KUsers = () => {
                                 {mockUsers.length} {activeTab === "K-Users" ? "users" : activeTab === "K-Owners" ? "owners" : "admins"}
                             </p>
                         </div>
-                    <Button>
-                        <User size={16} className="mr-2" />
-                        Add new {activeTab === "K-Owners" ? "owner" : activeTab === "K-Admins" ? "admin" : "user"}
-                    </Button>
-                </div>
-
-                {/* Table */}
-                <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead>
-                            <tr className="border-b">
-                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Name</th>
-                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">UID</th>
-                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Email</th>
-                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Phone Number</th>
-                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Date Added</th>
-                                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Status</th>
-                                <th className="w-10"></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {activeTab === "K-Users"
-                                ? mockUsers.map((user) => (
-                                    <tr key={user.UID} className="border-b">
-                                        <td className="py-3 px-4">
-                                            <div className="text-sm font-semibold">{user.name}</div>
-                                            <div className="text-xs text-muted-foreground">{user.walletBalance} FCFA</div>
-                                        </td>
-                                        <td className="py-3 px-4 text-sm">{user.UID}</td>
-                                        <td className="py-3 px-4 text-sm">{user.email}</td>
-                                        <td className="py-3 px-4 text-sm">{user.phoneNumber}</td>
-                                        <td className="py-3 px-4">
-                                            <div className="text-sm font-semibold">{user.date}</div>
-                                            <div className="text-xs text-muted-foreground">{user.time}</div>
-                                        </td>
-                                        <td className="py-3 px-4 text-sm">
-                                            <span className={`inline-flex items-center justify-center rounded-full px-2 py-1 text-xs font-medium ${
-                                                user.status === "Online" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                                            }`}>
-                                                {user.status}
-                                            </span>
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            <ChevronRight size={18} className="text-muted-foreground" />
-                                        </td>
-                                    </tr>
-                                ))
-                                : null
-                            }
-                        </tbody>
-                    </table>
+                    {activeTab !== "K-Users" && (
+                        <Button>
+                            <User size={16} className="mr-2" />
+                            Add new {activeTab === "K-Owners" ? "owner" : activeTab === "K-Admins" ? "admin" : "user"}
+                        </Button>
+                    )}
+                    </div>
+                    {/* Table */}
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="border-b">
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Name</th>
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">UID</th>
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Email</th>
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Phone Number</th>
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Date Added</th>
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Status</th>
+                                    <th className="w-10"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {activeTab === "K-Users"
+                                    ? mockUsers.map((user) => (
+                                        <tr key={user.UID} className="border-b">
+                                            <td className="py-3 px-4">
+                                                <div className="text-sm font-semibold">{user.name}</div>
+                                                <div className="text-xs text-muted-foreground">{user.walletBalance} FCFA</div>
+                                            </td>
+                                            <td className="py-3 px-4 text-sm">{user.UID}</td>
+                                            <td className="py-3 px-4 text-sm">{user.email}</td>
+                                            <td className="py-3 px-4 text-sm">{user.phoneNumber}</td>
+                                            <td className="py-3 px-4">
+                                                <div className="text-sm font-semibold">{user.date}</div>
+                                                <div className="text-xs text-muted-foreground">{user.time}</div>
+                                            </td>
+                                            <td className="py-3 px-4 text-sm">
+                                                <span className={`inline-flex items-center justify-center rounded-full px-2 py-1 text-xs font-medium ${
+                                                    user.status === "Online" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                                                }`}>
+                                                    {user.status}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                <ChevronRight size={18} className="text-muted-foreground" />
+                                            </td>
+                                        </tr>
+                                    ))
+                                    : null
+                                }
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
