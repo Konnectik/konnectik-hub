@@ -35,13 +35,28 @@ const DashboardNav = () => {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`px-4 py-2.5 text-sm font-medium transition-colors ${
+                  className={`relative px-4 py-2.5 text-sm transition-colors ${
                     isActive
-                      ? "bg-secondary text-foreground rounded-t-lg -mb-px z-10 border-t-[3px] border-t-primary-foreground"
-                      : "hover:bg-primary-foreground/10 rounded-t-lg mb-0"
+                      ? "bg-secondary text-tab-active font-semibold rounded-t-lg -mb-px z-10"
+                      : "hover:bg-primary-foreground/10 rounded-t-lg mb-0 font-medium"
                   }`}
                 >
                   {item.label}
+                  {/* Curved connectors */}
+                  {isActive && (
+                    <>
+                      <span className="absolute -left-2 bottom-0 w-2 h-2 bg-secondary" style={{
+                        borderBottomRightRadius: '8px',
+                        boxShadow: '4px 0 0 0 hsl(var(--secondary))',
+                        background: 'transparent',
+                      }} />
+                      <span className="absolute -right-2 bottom-0 w-2 h-2 bg-secondary" style={{
+                        borderBottomLeftRadius: '8px',
+                        boxShadow: '-4px 0 0 0 hsl(var(--secondary))',
+                        background: 'transparent',
+                      }} />
+                    </>
+                  )}
                 </Link>
               );
             })}
