@@ -11,6 +11,7 @@ import DashboardLayout from "./components/DashboardLayout";
 import KZones from "./pages/KZones";
 import KPlans from "./pages/KPlans";
 import KUsers from "./pages/KUsers";
+import AddZone from "./pages/AddZone";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
 

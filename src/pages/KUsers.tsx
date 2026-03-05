@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { User, ChevronRight } from "lucide-react";
+import PageTabs from "@/components/PageTabs";
 
 const tabs = ["K-Users", "K-Owners", "K-Admins"];
 
@@ -15,34 +16,11 @@ const KUsers = () => {
 
     return (
         <div>
-            {/* Tabs */}
-            <div className="bg-muted/60 px-6 pt-2">
-                <div className="flex items-end gap-0.5">
-                    {tabs.map((tab) => (
-                        <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={`px-5 py-2.5 text-sm font-medium transition-colors relative ${
-                                activeTab === tab
-                                ? "rounded-mb shadow-sm"
-                                : "text-muted-foreground hover:text-foreground rounded-md hover:bg-background/50"
-                            }`}
-                            style={
-                                activeTab === tab
-                                ? { color: "#2F4F9D", backgroundColor: "#F3F4FF"}
-                                : undefined
-                            }
-                            >
-                                {tab}
-                            </button>
-                    ))}
-                    </div>
-                <div className="border-b border-border -mx-6" />
-            </div>
+            <PageTabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
 
             {/* Content */}
-            <div className="p-6 bg-gray-50 rounded-xl">
-                <div className="bg-white rounded-xl border p-6 animate-fade-in shadow-sm">
+            <div className="p-6">
+                <div className="bg-card rounded-xl border p-6 animate-fade-in shadow-sm">
                     <div className="flex items-center justify-between mb-6">
                         <div>
                             <h2 className="text-xl font-bold">
