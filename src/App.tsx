@@ -12,6 +12,7 @@ import KZones from "./pages/KZones";
 import KPlans from "./pages/KPlans";
 import KUsers from "./pages/KUsers";
 import AddZone from "./pages/AddZone";
+import AddBundle from "./pages/AddBundle";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
 
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="k-zones/add" element={<AddZone />} />
             <Route path="users" element={<KUsers />} />
             <Route path="k-plans" element={<KPlans />} />
+            <Route path="k-plans/add" element={<AddBundle />} />
             <Route path="transactions" element={<PlaceholderPage />} />
             <Route path="help" element={<PlaceholderPage />} />
           </Route>

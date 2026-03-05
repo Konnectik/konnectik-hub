@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Currency, ChevronRight } from "lucide-react";
 import PageTabs from "@/components/PageTabs";
+import { a } from "vitest/dist/chunks/suite.d.FvehnV49.js";
 
 const tabs = ["Bundles"];
 
@@ -14,6 +16,7 @@ const mockPlans = [
 
 const KPlans = () => {
   const [activeTab, setActiveTab] = useState("Bundles");
+  const navigate = useNavigate();
 
   return (
     <div>
@@ -27,7 +30,7 @@ const KPlans = () => {
               <h2 className="text-xl font-bold">List of bundles</h2>
               <p className="text-sm text-muted-foreground">{mockPlans.length} bundles</p>
             </div>
-            <Button>
+            <Button onClick={activeTab === "Bundles" ? () => navigate("/dashboard/k-plans/add") : undefined}>
               <Currency size={16} className="mr-2" />
               Add new bundle
             </Button>
