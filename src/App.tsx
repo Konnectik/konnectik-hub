@@ -11,6 +11,7 @@ import DashboardLayout from "./components/DashboardLayout";
 import KZones from "./pages/KZones";
 import KPlans from "./pages/KPlans";
 import KUsers from "./pages/KUsers";
+import AddZone from "./pages/AddZone";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
 
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="k-zones" element={<KZones />} />
+            <Route path="k-zones/add" element={<AddZone />} />
             <Route path="users" element={<KUsers />} />
             <Route path="k-plans" element={<KPlans />} />
             <Route path="transactions" element={<PlaceholderPage />} />
