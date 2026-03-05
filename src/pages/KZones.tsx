@@ -41,7 +41,7 @@ const KZones = () => {
                 {activeTab === "Zones" ? "zones" : "routers"}
               </p>
             </div>
-            <Button onClick={activeTab === "Zones" ? () => navigate("/dashboard/k-zones/add") : undefined}>
+            <Button onClick={activeTab === "Zones" ? () => navigate("/dashboard/k-zones/add-zone") : () => navigate("/dashboard/k-zones/add-router")}>
               {activeTab === "Zones" ? (
                 <MapPin size={16} className="mr-2" />
               ) : (

@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Currency, ChevronRight } from "lucide-react";
 import PageTabs from "@/components/PageTabs";
-import { a } from "vitest/dist/chunks/suite.d.FvehnV49.js";
 
 const tabs = ["Bundles"];
 
