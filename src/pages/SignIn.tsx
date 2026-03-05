@@ -3,8 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import KonnectikLogo from "@/components/KonnectikLogo";
-import signupHero from "@/assets/signup-hero.jpg";
+import KonnectikLogo from "@/assets/logo-red.png";
+import signinHero from "@/assets/login-img.png";
 
 const SignIn = () => {
   const navigate = useNavigate();
@@ -22,16 +22,20 @@ const SignIn = () => {
       {/* Left - Form */}
       <div className="flex-1 flex flex-col justify-center px-8 md:px-16 lg:px-24 py-12">
         <div className="max-w-md w-full mx-auto animate-fade-in">
-          <div className="mb-8">
-            <KonnectikLogo size="md" />
+          <div className="mb-12 flex justify-center">
+            <img
+              src={KonnectikLogo}
+              alt="Konnectik Logo"
+              className="h-24 w-24 rounded-lg bg-transparent p-1"
+            />
           </div>
 
           <h1 className="text-3xl font-bold mb-2">Welcome back!</h1>
-          <p className="text-muted-foreground mb-8">Enter your Credentials to access your account</p>
+          <p className="text-muted-foreground mb-8">Enter your credentials to access your account</p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-semibold mb-2">Email address</label>
+              <label className="block text-sm font-semibold mb-2">Email Address</label>
               <Input
                 type="email"
                 placeholder="Enter your email"
@@ -44,7 +48,7 @@ const SignIn = () => {
               <div className="flex items-center justify-between mb-2">
                 <label className="text-sm font-semibold">Password</label>
                 <Link to="/forgot-password" className="text-sm text-primary font-medium hover:underline">
-                  forgot password
+                  Forgot Password
                 </Link>
               </div>
               <Input
@@ -109,8 +113,8 @@ const SignIn = () => {
       {/* Right - Image */}
       <div className="hidden lg:block lg:flex-1 relative">
         <img
-          src={signupHero}
-          alt="Person using phone"
+          src={signinHero}
+          alt="Person using phone and smiling"
           className="absolute inset-0 w-full h-full object-cover"
         />
       </div>

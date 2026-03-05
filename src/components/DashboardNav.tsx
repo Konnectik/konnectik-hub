@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { Monitor, LayoutGrid } from "lucide-react";
-import KonnectikLogo from "./KonnectikLogo";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import KonnectikLogo from "@/assets/logo-white.png";
 
 const navItems = [
   { label: "Users", path: "/dashboard/users" },
@@ -19,8 +19,12 @@ const DashboardNav = () => {
       <div className="flex items-center justify-between px-6 pt-3">
         <div className="flex items-end gap-8">
           <Link to="/dashboard" className="flex items-center gap-2 mb-2">
-            <div className="h-10 w-10 rounded-lg bg-primary-foreground/20 flex items-center justify-center">
-              <span className="font-bold text-lg">K</span>
+            <div className="h-10 w-10 rounded-lg bg-primary-foreground/10 flex items-center justify-center">
+                <img
+                  src={KonnectikLogo}
+                  alt="Konnectik Logo"
+                  className="h-10 w-10 rounded-lg bg-transparent p-1"
+                />
             </div>
           </Link>
 

@@ -9,6 +9,8 @@ import SignIn from "./pages/SignIn";
 import Dashboard from "./pages/Dashboard";
 import DashboardLayout from "./components/DashboardLayout";
 import KZones from "./pages/KZones";
+import KPlans from "./pages/KPlans";
+import KUsers from "./pages/KUsers";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
 
@@ -27,8 +29,8 @@ const App = () => (
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="k-zones" element={<KZones />} />
-            <Route path="users" element={<PlaceholderPage />} />
-            <Route path="k-plans" element={<PlaceholderPage />} />
+            <Route path="users" element={<KUsers />} />
+            <Route path="k-plans" element={<KPlans />} />
             <Route path="transactions" element={<PlaceholderPage />} />
             <Route path="help" element={<PlaceholderPage />} />
           </Route>
