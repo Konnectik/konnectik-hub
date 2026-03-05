@@ -7,7 +7,7 @@ interface PageTabsProps {
 const PageTabs = ({ tabs, activeTab, onTabChange }: PageTabsProps) => {
   return (
     <div className="bg-muted/40 px-6 py-3">
-      <div className="flex items-center gap-1">
+      <div className="flex items-center justify-center gap-1">
         {tabs.map((tab) => {
           const isActive = activeTab === tab;
           return (
