@@ -14,7 +14,7 @@ const PageTabs = ({ tabs, activeTab, onTabChange }: PageTabsProps) => {
             <button
               key={tab}
               onClick={() => onTabChange(tab)}
-              className={`px-5 py-2.5 text-sm transition-all relative rounded-t-lg ${
+              className={`px-5 py-3 text-sm transition-all relative rounded-lg ${
                 isActive
                   ? "bg-tab-active-bg text-tab-active font-semibold"
                   : "text-muted-foreground hover:text-foreground hover:bg-background/50 font-medium"
