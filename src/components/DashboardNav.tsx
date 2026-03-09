@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import KonnectikLogo from "@/assets/logo-white.png";
 
 const navItems = [
+  { label: "Dashboard", path: "/dashboard", exact: true },
   { label: "Users", path: "/dashboard/users" },
   { label: "K-Zones", path: "/dashboard/k-zones" },
   { label: "K-Plans", path: "/dashboard/k-plans" },
@@ -30,7 +31,9 @@ const DashboardNav = () => {
 
           <nav className="flex items-end gap-0.5">
             {navItems.map((item) => {
-              const isActive = location.pathname.startsWith(item.path);
+              const isActive = item.exact
+                ? location.pathname === item.path
+                : location.pathname.startsWith(item.path) && !item.exact;
               return (
                 <Link
                   key={item.path}
