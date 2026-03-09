@@ -11,6 +11,7 @@ import DashboardLayout from "./components/DashboardLayout";
 import KZones from "./pages/KZones";
 import KPlans from "./pages/KPlans";
 import KUsers from "./pages/KUsers";
+import Transx from "./pages/Transactions";
 import AddUser from "./pages/AddUser";
 import AddRouter from "./pages/AddRouter";
 import AddZone from "./pages/AddZone";
@@ -39,7 +40,8 @@ const App = () => (
             <Route path="users/add" element={<AddUser />} />
             <Route path="k-plans" element={<KPlans />} />
             <Route path="k-plans/add" element={<AddBundle />} />
-            <Route path="transactions" element={<PlaceholderPage />} />
+            <Route path="transactions" element={<Transx />} />
+            <Route path="mybalance" element={<PlaceholderPage />} />
             <Route path="help" element={<PlaceholderPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
