@@ -16,6 +16,7 @@ import AddUser from "./pages/AddUser";
 import AddRouter from "./pages/AddRouter";
 import AddZone from "./pages/AddZone";
 import AddBundle from "./pages/AddBundle";
+import MyBalance from "./pages/MyBalance";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
 
@@ -41,7 +42,7 @@ const App = () => (
             <Route path="k-plans" element={<KPlans />} />
             <Route path="k-plans/add" element={<AddBundle />} />
             <Route path="transactions" element={<Transx />} />
-            <Route path="mybalance" element={<PlaceholderPage />} />
+            <Route path="mybalance" element={<MyBalance />} />
             <Route path="help" element={<PlaceholderPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
