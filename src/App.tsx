@@ -42,7 +42,7 @@ const App = () => (
             <Route path="k-plans" element={<KPlans />} />
             <Route path="k-plans/add" element={<AddBundle />} />
             <Route path="transactions" element={<Transx />} />
-            <Route path="mybalance" element={<PlaceholderPage />} />
+            <Route path="mybalance" element={<MyBalance />} />
             <Route path="help" element={<PlaceholderPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
