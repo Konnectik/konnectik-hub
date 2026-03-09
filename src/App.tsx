@@ -16,6 +16,7 @@ import AddUser from "./pages/AddUser";
 import AddRouter from "./pages/AddRouter";
 import AddZone from "./pages/AddZone";
 import AddBundle from "./pages/AddBundle";
+import MyBalance from "./pages/MyBalance";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
 
