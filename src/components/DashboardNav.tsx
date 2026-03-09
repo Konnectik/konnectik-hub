@@ -31,7 +31,9 @@ const DashboardNav = () => {
 
           <nav className="flex items-end gap-0.5">
             {navItems.map((item) => {
-              const isActive = location.pathname.startsWith(item.path);
+              const isActive = (item as any).exact
+                ? location.pathname === item.path
+                : location.pathname.startsWith(item.path);
               return (
                 <Link
                   key={item.path}
