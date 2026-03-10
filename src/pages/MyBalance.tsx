@@ -60,7 +60,7 @@ const MyBalance = () => {
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawMethod, setWithdrawMethod] = useState("");
 
-  const isAdmin = currentRole === "admin";
+  const { isAdmin } = useAuth();
 
   // Filter transactions based on role
   const transactions = isAdmin
