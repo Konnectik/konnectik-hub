@@ -121,7 +121,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       .eq('user_id', data.user.id)
       .single();
 
-    const userRole = roleData?.role as AppRole | null;
+    const userRole = roleData ? (roleData.role as AppRole) : null;
 
     if (!userRole || userRole === 'user') {
       await supabase.auth.signOut();
