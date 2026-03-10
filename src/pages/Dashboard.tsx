@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Wifi,
   Router,
@@ -11,9 +12,6 @@ import {
   TrendingUp,
   ArrowUpRight,
 } from "lucide-react";
-
-type UserRole = "admin" | "zone-owner";
-const currentRole: UserRole = "admin";
 
 // Mock data
 const mockZones = [
