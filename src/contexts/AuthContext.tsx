@@ -50,7 +50,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       .select('role')
       .eq('user_id', userId)
       .single();
-    setRole((data?.role as AppRole) ?? null);
+    if (data) {
+      setRole(data.role as AppRole);
+    } else {
+      setRole(null);
+    }
   }, []);
 
   useEffect(() => {
