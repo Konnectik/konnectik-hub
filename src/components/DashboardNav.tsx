@@ -1,6 +1,7 @@
-import { Link, useLocation } from "react-router-dom";
-import { Monitor, LayoutGrid } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Monitor, LayoutGrid, LogOut } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/contexts/AuthContext";
 import KonnectikLogo from "@/assets/logo-white.png";
 
 const navItems = [
@@ -14,6 +15,22 @@ const navItems = [
 
 const DashboardNav = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { profile, role, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/signin");
+  };
+
+  const displayName = profile?.full_name || "User";
+  const initials = displayName
+    .split(" ")
+    .map((n: string) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+  const roleLabel = role === "admin" ? "Admin" : role === "owner" ? "Owner" : "User";
 
   return (
     <header className="bg-nav text-nav-foreground">
@@ -45,7 +62,6 @@ const DashboardNav = () => {
                   }`}
                 >
                   {item.label}
-                  {/* Curved connectors */}
                   {isActive && (
                     <>
                       <span className="absolute -left-2 bottom-0 w-2 h-2 bg-secondary" style={{
@@ -73,14 +89,22 @@ const DashboardNav = () => {
           <button className="p-2 rounded-md hover:bg-primary-foreground/10 transition-colors">
             <Monitor size={18} />
           </button>
+          <button
+            onClick={handleSignOut}
+            className="p-2 rounded-md hover:bg-primary-foreground/10 transition-colors"
+            title="Sign out"
+          >
+            <LogOut size={18} />
+          </button>
           <div className="flex items-center gap-3 ml-2">
             <div className="text-right text-sm">
-              <div className="font-semibold">Admin User</div>
-              <div className="text-xs opacity-80">Admin</div>
+              <div className="font-semibold">{displayName}</div>
+              <div className="text-xs opacity-80">{roleLabel}</div>
             </div>
             <Avatar className="h-9 w-9 bg-primary-foreground text-foreground">
+              {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
               <AvatarFallback className="bg-primary-foreground text-foreground font-bold text-sm">
-                A
+                {initials}
               </AvatarFallback>
             </Avatar>
           </div>
