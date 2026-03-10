@@ -40,7 +40,7 @@ const statusStyles: Record<string, string> = {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const isAdmin = currentRole === "admin";
+  const { isAdmin } = useAuth();
 
   const zones = isAdmin ? mockZones : mockZones.filter((z) => ownedZoneIds.includes(z.id));
   const transactions = isAdmin ? mockTransactions : mockTransactions.filter((tx) => ownedZoneIds.includes(tx.zoneId));
