@@ -110,10 +110,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     if (error) return { error: error.message };
 
-    // Check if user has admin or owner role (only they can access the platform)
-    const { data: userRole } = await supabase.rpc('get_user_role', {
-      _user_id: data.user.id,
-    });
+    // Check if user has admin or owner role
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', data.user.id)
+      .single();
+
+    const userRole = roleData?.role as AppRole | null;
 
     if (!userRole || userRole === 'user') {
       await supabase.auth.signOut();
