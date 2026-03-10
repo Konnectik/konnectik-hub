@@ -24,9 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-// Mock: current user role
-type UserRole = "admin" | "zone-owner";
-const currentRole: UserRole = "admin";
+// Role from auth context
 
 const mockZones = [
   { id: 1, name: "Cité des Palmiers" },
