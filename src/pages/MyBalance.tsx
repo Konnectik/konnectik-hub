@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,9 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-// Mock: current user role
-type UserRole = "admin" | "zone-owner";
-const currentRole: UserRole = "admin";
+// Role from auth context
 
 const mockZones = [
   { id: 1, name: "Cité des Palmiers" },
@@ -61,7 +60,7 @@ const MyBalance = () => {
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawMethod, setWithdrawMethod] = useState("");
 
-  const isAdmin = currentRole === "admin";
+  const { isAdmin } = useAuth();
 
   // Filter transactions based on role
   const transactions = isAdmin
