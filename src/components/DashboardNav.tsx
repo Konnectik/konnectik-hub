@@ -1,7 +1,9 @@
+import { useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Monitor, LayoutGrid, LogOut } from "lucide-react";
+import { Monitor, LayoutGrid, LogOut, Camera } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAvatarUpload } from "@/hooks/use-avatar-upload";
 import KonnectikLogo from "@/assets/logo-white.png";
 
 const navItems = [
