@@ -21,6 +21,9 @@ import AddBundle from "./pages/AddBundle";
 import MyBalance from "./pages/MyBalance";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
+import EditZone from "./pages/EditZone";
+import EditRouter from "./pages/EditRouter";
+import EditBundle from "./pages/EditBundle";
 
 const queryClient = new QueryClient();
 
@@ -47,10 +50,13 @@ const App = () => (
               <Route path="k-zones" element={<KZones />} />
               <Route path="k-zones/add-zone" element={<AddZone />} />
               <Route path="k-zones/add-router" element={<AddRouter />} />
+              <Route path="k-zones/zone/:id" element={<EditZone />} />
+              <Route path="k-zones/router/:id" element={<EditRouter />} />
               <Route path="users" element={<KUsers />} />
               <Route path="users/add" element={<AddUser />} />
               <Route path="k-plans" element={<KPlans />} />
               <Route path="k-plans/add" element={<AddBundle />} />
+              <Route path="k-plans/:id" element={<EditBundle />} />
               <Route path="transactions" element={<Transx />} />
               <Route path="mybalance" element={<MyBalance />} />
               <Route path="help" element={<PlaceholderPage />} />
