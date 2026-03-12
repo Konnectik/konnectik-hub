@@ -24,16 +24,33 @@ export const useAddRouter = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (router: { name: string; username: string; password: string; zone_id: string }) => {
-      const { data, error } = await supabase
-        .from('routers')
-        .insert(router)
-        .select()
-        .single();
+      const { data, error } = await supabase.from('routers').insert(router).select().single();
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: QUERY_KEY }); },
+  });
+};
+
+export const useUpdateRouter = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<Pick<RouterDevice, 'name' | 'username' | 'password' | 'zone_id'>> }) => {
+      const { data, error } = await supabase.from('routers').update(updates).eq('id', id).select().single();
+      if (error) throw error;
+      return data;
     },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: QUERY_KEY }); },
+  });
+};
+
+export const useDeleteRouter = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('routers').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: QUERY_KEY }); },
   });
 };

@@ -24,16 +24,33 @@ export const useAddBundle = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (bundle: { name: string; duration: number; duration_unit: string; price: number; currency: string }) => {
-      const { data, error } = await supabase
-        .from('bundles')
-        .insert(bundle)
-        .select()
-        .single();
+      const { data, error } = await supabase.from('bundles').insert(bundle).select().single();
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: QUERY_KEY }); },
+  });
+};
+
+export const useUpdateBundle = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<Pick<Bundle, 'name' | 'duration' | 'duration_unit' | 'price' | 'currency'>> }) => {
+      const { data, error } = await supabase.from('bundles').update(updates).eq('id', id).select().single();
+      if (error) throw error;
+      return data;
     },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: QUERY_KEY }); },
+  });
+};
+
+export const useDeleteBundle = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('bundles').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: QUERY_KEY }); },
   });
 };
