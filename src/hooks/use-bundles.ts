@@ -1,10 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useRealtimeSubscription } from './use-realtime';
 import type { Bundle } from '@/types/database';
 
+const QUERY_KEY = ['bundles'];
+
 export const useBundles = () => {
+  useRealtimeSubscription('bundles', QUERY_KEY);
   return useQuery({
-    queryKey: ['bundles'],
+    queryKey: QUERY_KEY,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('bundles')
@@ -29,7 +33,7 @@ export const useAddBundle = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bundles'] });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
     },
   });
 };

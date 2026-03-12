@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useRealtimeSubscription } from './use-realtime';
 import type { Profile, AppRole } from '@/types/database';
 
 interface UserWithRole extends Profile {
@@ -7,17 +8,16 @@ interface UserWithRole extends Profile {
 }
 
 export const useUsers = (roleFilter?: AppRole) => {
+  useRealtimeSubscription('profiles', ['users', roleFilter ?? '__all__']);
   return useQuery({
     queryKey: ['users', roleFilter],
     queryFn: async () => {
-      // Get all profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
       if (profilesError) throw profilesError;
 
-      // Get all roles
       const { data: roles, error: rolesError } = await supabase
         .from('user_roles')
         .select('*');

@@ -1,7 +1,9 @@
+import { useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Monitor, LayoutGrid, LogOut } from "lucide-react";
+import { Monitor, LayoutGrid, LogOut, Camera } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAvatarUpload } from "@/hooks/use-avatar-upload";
 import KonnectikLogo from "@/assets/logo-white.png";
 
 const navItems = [
@@ -17,6 +19,8 @@ const DashboardNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile, role, signOut } = useAuth();
+  const { uploadAvatar, uploading } = useAvatarUpload();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const handleSignOut = async () => {
     await signOut();
@@ -101,12 +105,30 @@ const DashboardNav = () => {
               <div className="font-semibold">{displayName}</div>
               <div className="text-xs opacity-80">{roleLabel}</div>
             </div>
-            <Avatar className="h-9 w-9 bg-primary-foreground text-foreground">
-              {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
-              <AvatarFallback className="bg-primary-foreground text-foreground font-bold text-sm">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative group">
+              <Avatar className="h-9 w-9 bg-primary-foreground text-foreground cursor-pointer" onClick={() => avatarInputRef.current?.click()}>
+                {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
+                <AvatarFallback className="bg-primary-foreground text-foreground font-bold text-sm">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer" onClick={() => avatarInputRef.current?.click()}>
+                <Camera size={14} className="text-white" />
+              </div>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    await uploadAvatar(file);
+                    window.location.reload();
+                  }
+                }}
+              />
+            </div>
           </div>
         </div>
       </div>

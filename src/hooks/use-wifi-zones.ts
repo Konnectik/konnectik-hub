@@ -1,10 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useRealtimeSubscription } from './use-realtime';
 import type { WifiZone } from '@/types/database';
 
+const QUERY_KEY = ['wifi_zones'];
+
 export const useWifiZones = () => {
+  useRealtimeSubscription('wifi_zones', QUERY_KEY);
   return useQuery({
-    queryKey: ['wifi_zones'],
+    queryKey: QUERY_KEY,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('wifi_zones')
@@ -29,7 +33,7 @@ export const useAddWifiZone = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['wifi_zones'] });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
     },
   });
 };
