@@ -50,6 +50,8 @@ const App = () => (
               <Route path="k-zones" element={<KZones />} />
               <Route path="k-zones/add-zone" element={<AddZone />} />
               <Route path="k-zones/add-router" element={<AddRouter />} />
+              <Route path="k-zones/zone/:id" element={<EditZone />} />
+              <Route path="k-zones/router/:id" element={<EditRouter />} />
               <Route path="users" element={<KUsers />} />
               <Route path="users/add" element={<AddUser />} />
               <Route path="k-plans" element={<KPlans />} />
