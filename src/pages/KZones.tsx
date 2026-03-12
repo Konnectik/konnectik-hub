@@ -78,7 +78,7 @@ const KZones = () => {
                     ? zones.map((zone) => {
                         const date = new Date(zone.created_at);
                         return (
-                          <tr key={zone.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors cursor-pointer">
+                          <tr key={zone.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => navigate(`/dashboard/k-zones/zone/${zone.id}`)}>
                             <td className="py-4 px-4 font-medium">{zone.name}</td>
                             <td className="py-4 px-4 text-sm text-muted-foreground">
                               <div className="flex items-center gap-3">
