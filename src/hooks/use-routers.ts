@@ -1,10 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useRealtimeSubscription } from './use-realtime';
 import type { RouterDevice } from '@/types/database';
 
+const QUERY_KEY = ['routers'];
+
 export const useRouters = () => {
+  useRealtimeSubscription('routers', QUERY_KEY);
   return useQuery({
-    queryKey: ['routers'],
+    queryKey: QUERY_KEY,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('routers')
@@ -29,7 +33,7 @@ export const useAddRouter = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['routers'] });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
     },
   });
 };
