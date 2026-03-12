@@ -19,6 +19,8 @@ const DashboardNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile, role, signOut } = useAuth();
+  const { uploadAvatar, uploading } = useAvatarUpload();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const handleSignOut = async () => {
     await signOut();
