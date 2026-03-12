@@ -76,7 +76,7 @@ const EditBundle = () => {
             </div>
             <div className="space-y-2">
               <Label>Duration Unit</Label>
-              <Select value={form.duration_unit} onValueChange={(val) => setForm({ ...form, duration_unit: val })}>
+              <Select value={form.duration_unit} onValueChange={(val) => setForm({ ...form, duration_unit: val as 'Hours' | 'Days' | 'Weeks' })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Hours">Hours</SelectItem>
