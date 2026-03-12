@@ -52,7 +52,7 @@ const KPlans = () => {
                   {bundles.map((plan) => {
                     const date = new Date(plan.created_at);
                     return (
-                      <tr key={plan.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors cursor-pointer">
+                      <tr key={plan.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => navigate(`/dashboard/k-plans/${plan.id}`)}>
                         <td className="py-3 px-4 font-medium">{plan.name}</td>
                         <td className="py-3 px-4">
                           <div className="text-sm font-semibold">{plan.duration}</div>

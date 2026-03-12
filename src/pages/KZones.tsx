@@ -101,7 +101,7 @@ const KZones = () => {
                         );
                       })
                     : routers.map((router) => (
-                        <tr key={router.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors cursor-pointer">
+                        <tr key={router.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => navigate(`/dashboard/k-zones/router/${router.id}`)}>
                           <td className="py-4 px-4 font-medium">{router.name}</td>
                           <td className="py-4 px-4 text-sm text-muted-foreground">{router.username}</td>
                           <td className="py-4 px-4">

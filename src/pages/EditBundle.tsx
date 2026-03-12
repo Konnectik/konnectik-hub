@@ -22,7 +22,7 @@ const EditBundle = () => {
 
   const bundle = bundles.find((b) => b.id === id);
 
-  const [form, setForm] = useState({ name: "", duration: 0, duration_unit: "Hours", price: 0, currency: "CDF" });
+  const [form, setForm] = useState<{ name: string; duration: number; duration_unit: 'Hours' | 'Days' | 'Weeks'; price: number; currency: string }>({ name: "", duration: 0, duration_unit: "Hours", price: 0, currency: "CDF" });
 
   useEffect(() => {
     if (bundle) {

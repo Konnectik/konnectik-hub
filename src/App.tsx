@@ -56,6 +56,7 @@ const App = () => (
               <Route path="users/add" element={<AddUser />} />
               <Route path="k-plans" element={<KPlans />} />
               <Route path="k-plans/add" element={<AddBundle />} />
+              <Route path="k-plans/:id" element={<EditBundle />} />
               <Route path="transactions" element={<Transx />} />
               <Route path="mybalance" element={<MyBalance />} />
               <Route path="help" element={<PlaceholderPage />} />
