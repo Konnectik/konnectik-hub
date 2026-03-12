@@ -21,6 +21,9 @@ import AddBundle from "./pages/AddBundle";
 import MyBalance from "./pages/MyBalance";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
+import EditZone from "./pages/EditZone";
+import EditRouter from "./pages/EditRouter";
+import EditBundle from "./pages/EditBundle";
 
 const queryClient = new QueryClient();
 
