@@ -92,10 +92,35 @@ const KZones = () => {
                             <td className="py-4 px-4 font-medium">{zone.name}</td>
                             <td className="py-4 px-4 text-sm text-muted-foreground">
                               <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded bg-muted flex items-center justify-center">
-                                  <MapPin size={14} className="text-muted-foreground" />
-                                </div>
-                                {zone.location}
+                                {(() => {
+                                  const coords = parseLocation(zone.location);
+                                  if (coords) {
+                                    return (
+                                      <button
+                                        type="button"
+                                        className="w-12 h-12 rounded border border-border overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-primary/50 transition-all"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setMapZone({ name: zone.name, lat: coords.lat, lng: coords.lng });
+                                        }}
+                                        title="View on map"
+                                      >
+                                        <img
+                                          src={`https://staticmap.openstreetmap.de/staticmap.php?center=${coords.lat},${coords.lng}&zoom=14&size=96x96&markers=${coords.lat},${coords.lng},red-pushpin`}
+                                          alt="Map"
+                                          className="w-full h-full object-cover"
+                                          loading="lazy"
+                                        />
+                                      </button>
+                                    );
+                                  }
+                                  return (
+                                    <div className="w-12 h-12 rounded bg-muted flex items-center justify-center flex-shrink-0">
+                                      <MapPin size={14} className="text-muted-foreground" />
+                                    </div>
+                                  );
+                                })()}
+                                <span>{zone.location}</span>
                               </div>
                             </td>
                             <td className="py-4 px-4 text-sm">{zone.radius}</td>
