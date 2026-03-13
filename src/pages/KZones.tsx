@@ -168,6 +168,43 @@ const KZones = () => {
           )}
         </div>
       </div>
+
+      {/* Map Dialog */}
+      <Dialog open={!!mapZone} onOpenChange={(open) => !open && setMapZone(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MapPin size={18} className="text-primary" />
+              {mapZone?.name}
+            </DialogTitle>
+          </DialogHeader>
+          {mapZone && (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Coordinates: {mapZone.lat.toFixed(5)}, {mapZone.lng.toFixed(5)}
+              </p>
+              <div className="rounded-lg overflow-hidden border border-border">
+                <iframe
+                  title="Zone Location"
+                  width="100%"
+                  height="350"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  src={`https://www.openstreetmap.org/export/embed.html?bbox=${mapZone.lng - 0.01},${mapZone.lat - 0.006},${mapZone.lng + 0.01},${mapZone.lat + 0.006}&layer=mapnik&marker=${mapZone.lat},${mapZone.lng}`}
+                />
+              </div>
+              <a
+                href={`https://www.openstreetmap.org/?mlat=${mapZone.lat}&mlon=${mapZone.lng}#map=16/${mapZone.lat}/${mapZone.lng}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-primary hover:underline"
+              >
+                Open in OpenStreetMap ↗
+              </a>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
