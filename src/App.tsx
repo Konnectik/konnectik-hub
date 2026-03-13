@@ -24,6 +24,7 @@ import NotFound from "./pages/NotFound";
 import EditZone from "./pages/EditZone";
 import EditRouter from "./pages/EditRouter";
 import EditBundle from "./pages/EditBundle";
+import ProfileSettings from "./pages/ProfileSettings";
 
 const queryClient = new QueryClient();
 
