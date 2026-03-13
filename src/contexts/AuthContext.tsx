@@ -97,7 +97,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       email,
       password,
       options: {
-        data: { full_name: fullName },
+        data: { full_name: fullName, signup_source: 'platform' },
         emailRedirectTo: window.location.origin,
       },
     });

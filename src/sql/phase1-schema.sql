@@ -75,9 +75,12 @@ BEGIN
     NEW.email
   );
 
-  -- Auto-assign 'owner' role to all new signups
-  INSERT INTO public.user_roles (user_id, role)
-  VALUES (NEW.id, 'owner');
+  -- Assign role based on signup source
+  IF NEW.raw_user_meta_data->>'signup_source' = 'platform' THEN
+    INSERT INTO public.user_roles (user_id, role) VALUES (NEW.id, 'owner');
+  ELSE
+    INSERT INTO public.user_roles (user_id, role) VALUES (NEW.id, 'user');
+  END IF;
 
   RETURN NEW;
 END;
