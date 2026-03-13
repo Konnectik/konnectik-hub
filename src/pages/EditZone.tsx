@@ -21,11 +21,20 @@ const EditZone = () => {
 
   const zone = zones.find((z) => z.id === id);
 
-  const [form, setForm] = useState({ name: "", location: "", radius: 0, bandwidth: 0 });
+  const [form, setForm] = useState({ name: "", latitude: "", longitude: "", radius: 0, bandwidth: 0 });
+
+  const formatCoord = (value: string) => {
+    const cleaned = value.replace(/[^0-9.\-]/g, "");
+    const parts = cleaned.split(".");
+    if (parts.length > 2) return parts[0] + "." + parts.slice(1).join("");
+    if (parts[1] && parts[1].length > 5) return parts[0] + "." + parts[1].slice(0, 5);
+    return cleaned;
+  };
 
   useEffect(() => {
     if (zone) {
-      setForm({ name: zone.name, location: zone.location, radius: zone.radius, bandwidth: zone.bandwidth });
+      const [lat, lng] = (zone.location || ",").split(",");
+      setForm({ name: zone.name, latitude: lat?.trim() || "", longitude: lng?.trim() || "", radius: zone.radius, bandwidth: zone.bandwidth });
     }
   }, [zone]);
 
