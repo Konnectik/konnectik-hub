@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,11 +13,16 @@ const ProfileSettings = () => {
   const { profile, user } = useAuth();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
   const [form, setForm] = useState({
     full_name: "",
     phone: "",
     address: "",
     company: "",
+  });
+  const [passwords, setPasswords] = useState({
+    newPassword: "",
+    confirmPassword: "",
   });
 
   useEffect(() => {
@@ -50,6 +55,26 @@ const ProfileSettings = () => {
     } else {
       toast({ title: "Profile updated" });
       window.location.reload();
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    if (passwords.newPassword.length < 6) {
+      toast({ title: "Error", description: "Password must be at least 6 characters.", variant: "destructive" });
+      return;
+    }
+    if (passwords.newPassword !== passwords.confirmPassword) {
+      toast({ title: "Error", description: "Passwords do not match.", variant: "destructive" });
+      return;
+    }
+    setChangingPassword(true);
+    const { error } = await supabase.auth.updateUser({ password: passwords.newPassword });
+    setChangingPassword(false);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Password updated successfully" });
+      setPasswords({ newPassword: "", confirmPassword: "" });
     }
   };
 
@@ -102,6 +127,35 @@ const ProfileSettings = () => {
         <Button onClick={handleSave} disabled={saving} className="gap-2">
           <Save size={16} />
           {saving ? "Saving…" : "Save Changes"}
+        </Button>
+      </div>
+
+      <div className="bg-card rounded-xl border border-border p-6 max-w-lg space-y-5">
+        <div className="flex items-center gap-2">
+          <Lock size={18} className="text-muted-foreground" />
+          <h2 className="text-lg font-semibold text-foreground">Change Password</h2>
+        </div>
+        <div className="space-y-1.5">
+          <Label>New Password</Label>
+          <Input
+            type="password"
+            value={passwords.newPassword}
+            onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
+            placeholder="Min. 6 characters"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Confirm New Password</Label>
+          <Input
+            type="password"
+            value={passwords.confirmPassword}
+            onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
+            placeholder="Re-enter new password"
+          />
+        </div>
+        <Button onClick={handlePasswordChange} disabled={changingPassword} className="gap-2">
+          <Lock size={16} />
+          {changingPassword ? "Updating…" : "Update Password"}
         </Button>
       </div>
     </div>
