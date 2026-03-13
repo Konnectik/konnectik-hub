@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, Save, Trash2, MapPin } from "lucide-react";
 import { useWifiZones, useUpdateWifiZone, useDeleteWifiZone } from "@/hooks/use-wifi-zones";
 import { useToast } from "@/hooks/use-toast";
 import {
