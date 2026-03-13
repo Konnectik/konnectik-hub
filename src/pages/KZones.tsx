@@ -17,8 +17,15 @@ const KZones = () => {
   const navigate = useNavigate();
   const { data: zones = [], isLoading: zonesLoading } = useWifiZones();
   const { data: routers = [], isLoading: routersLoading } = useRouters();
+  const [mapZone, setMapZone] = useState<{ name: string; lat: number; lng: number } | null>(null);
 
   const isLoading = activeTab === "Zones" ? zonesLoading : routersLoading;
+
+  const parseLocation = (location: string) => {
+    const [lat, lng] = location.split(",").map((s) => parseFloat(s.trim()));
+    if (!isNaN(lat) && !isNaN(lng)) return { lat, lng };
+    return null;
+  };
 
   return (
     <div>
