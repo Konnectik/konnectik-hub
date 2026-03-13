@@ -1,10 +1,29 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { User, ChevronRight } from "lucide-react";
+import { User, ChevronRight, Shield } from "lucide-react";
 import PageTabs from "@/components/PageTabs";
 import { useUsers } from "@/hooks/use-users";
+import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/hooks/use-toast";
 import type { AppRole } from "@/types/database";
 
 const tabs = ["K-Users", "K-Owners", "K-Admins"];
@@ -18,7 +37,37 @@ const roleMap: Record<string, AppRole> = {
 const KUsers = () => {
   const [activeTab, setActiveTab] = useState("K-Users");
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const { data: users = [], isLoading } = useUsers(roleMap[activeTab]);
+  const queryClient = useQueryClient();
+
+  const [selectedUser, setSelectedUser] = useState<{ id: string; full_name: string; role: AppRole | null } | null>(null);
+  const [newRole, setNewRole] = useState<AppRole>("user");
+  const [saving, setSaving] = useState(false);
+
+  const handleOpenRoleDialog = (user: { id: string; full_name: string; role: AppRole | null }) => {
+    if (!isAdmin) return;
+    setSelectedUser(user);
+    setNewRole(user.role || "user");
+  };
+
+  const handleChangeRole = async () => {
+    if (!selectedUser) return;
+    setSaving(true);
+    try {
+      // Upsert: delete existing role then insert new one
+      await supabase.from("user_roles").delete().eq("user_id", selectedUser.id);
+      const { error } = await supabase.from("user_roles").insert({ user_id: selectedUser.id, role: newRole });
+      if (error) throw error;
+      toast({ title: "Role updated", description: `${selectedUser.full_name} is now ${newRole}.` });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      setSelectedUser(null);
+    } catch (e: any) {
+      toast({ title: "Failed to update role", description: e.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div>
@@ -58,6 +107,7 @@ const KUsers = () => {
                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Email</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Phone</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Date Added</th>
+                    {isAdmin && <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Role</th>}
                     <th className="w-10"></th>
                   </tr>
                 </thead>
@@ -65,7 +115,11 @@ const KUsers = () => {
                   {users.map((user) => {
                     const date = new Date(user.created_at);
                     return (
-                      <tr key={user.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors cursor-pointer">
+                      <tr
+                        key={user.id}
+                        className="border-b last:border-0 hover:bg-muted/50 transition-colors cursor-pointer"
+                        onClick={() => handleOpenRoleDialog({ id: user.id, full_name: user.full_name, role: user.role })}
+                      >
                         <td className="py-3 px-4">
                           <div className="text-sm font-semibold">{user.full_name}</div>
                         </td>
@@ -75,6 +129,14 @@ const KUsers = () => {
                           <div className="text-sm font-semibold">{date.toLocaleDateString()}</div>
                           <div className="text-xs text-muted-foreground">{date.toLocaleTimeString()}</div>
                         </td>
+                        {isAdmin && (
+                          <td className="py-3 px-4">
+                            <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-muted">
+                              <Shield size={12} />
+                              {user.role || "user"}
+                            </span>
+                          </td>
+                        )}
                         <td className="py-3 px-4">
                           <ChevronRight size={18} className="text-muted-foreground" />
                         </td>
@@ -90,6 +152,37 @@ const KUsers = () => {
           )}
         </div>
       </div>
+
+      {/* Role Change Dialog (Admin only) */}
+      <Dialog open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Role</DialogTitle>
+            <DialogDescription>
+              Update the role for <span className="font-semibold">{selectedUser?.full_name}</span>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-3">
+            <label className="text-sm font-medium">New Role</label>
+            <Select value={newRole} onValueChange={(v) => setNewRole(v as AppRole)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="user">User</SelectItem>
+                <SelectItem value="owner">Owner</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSelectedUser(null)}>Cancel</Button>
+            <Button onClick={handleChangeRole} disabled={saving}>
+              {saving ? "Saving..." : "Save Role"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
