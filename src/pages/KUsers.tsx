@@ -44,6 +44,7 @@ const KUsers = () => {
   const [selectedUser, setSelectedUser] = useState<{ id: string; full_name: string; role: AppRole | null } | null>(null);
   const [newRole, setNewRole] = useState<AppRole>("user");
   const [saving, setSaving] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const handleOpenRoleDialog = (user: { id: string; full_name: string; role: AppRole | null }) => {
     if (!isAdmin) return;
@@ -177,8 +178,42 @@ const KUsers = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSelectedUser(null)}>Cancel</Button>
-            <Button onClick={handleChangeRole} disabled={saving}>
-              {saving ? "Saving..." : "Save Role"}
+            <Button
+              onClick={() => {
+                if (newRole === (selectedUser?.role || "user")) {
+                  setSelectedUser(null);
+                  return;
+                }
+                setConfirmOpen(true);
+              }}
+            >
+              Save Role
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation Dialog */}
+      <Dialog open={confirmOpen} onOpenChange={(open) => !open && setConfirmOpen(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Role Change</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to change <span className="font-semibold">{selectedUser?.full_name}</span>'s role
+              from <span className="font-semibold">{selectedUser?.role || "user"}</span> to <span className="font-semibold">{newRole}</span>?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                setConfirmOpen(false);
+                await handleChangeRole();
+              }}
+              disabled={saving}
+            >
+              {saving ? "Saving..." : "Confirm"}
             </Button>
           </DialogFooter>
         </DialogContent>
