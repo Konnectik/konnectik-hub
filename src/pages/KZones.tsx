@@ -6,6 +6,9 @@ import PageTabs from "@/components/PageTabs";
 import { useWifiZones } from "@/hooks/use-wifi-zones";
 import { useRouters } from "@/hooks/use-routers";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 
 const tabs = ["Zones", "Routers"];
 
