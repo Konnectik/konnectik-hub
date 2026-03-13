@@ -21,18 +21,37 @@ const EditZone = () => {
 
   const zone = zones.find((z) => z.id === id);
 
-  const [form, setForm] = useState({ name: "", location: "", radius: 0, bandwidth: 0 });
+  const [form, setForm] = useState({ name: "", latitude: "", longitude: "", radius: 0, bandwidth: 0 });
+
+  const formatCoord = (value: string) => {
+    const cleaned = value.replace(/[^0-9.\-]/g, "");
+    const parts = cleaned.split(".");
+    if (parts.length > 2) return parts[0] + "." + parts.slice(1).join("");
+    if (parts[1] && parts[1].length > 5) return parts[0] + "." + parts[1].slice(0, 5);
+    return cleaned;
+  };
 
   useEffect(() => {
     if (zone) {
-      setForm({ name: zone.name, location: zone.location, radius: zone.radius, bandwidth: zone.bandwidth });
+      const [lat, lng] = (zone.location || ",").split(",");
+      setForm({ name: zone.name, latitude: lat?.trim() || "", longitude: lng?.trim() || "", radius: zone.radius, bandwidth: zone.bandwidth });
     }
   }, [zone]);
 
   const handleSave = async () => {
     if (!id) return;
+    const lat = parseFloat(form.latitude);
+    const lng = parseFloat(form.longitude);
+    if (isNaN(lat) || lat < -90 || lat > 90) {
+      toast({ title: "Latitude must be between -90 and 90", variant: "destructive" });
+      return;
+    }
+    if (isNaN(lng) || lng < -180 || lng > 180) {
+      toast({ title: "Longitude must be between -180 and 180", variant: "destructive" });
+      return;
+    }
     try {
-      await updateZone.mutateAsync({ id, updates: form });
+      await updateZone.mutateAsync({ id, updates: { name: form.name, location: `${lat.toFixed(5)},${lng.toFixed(5)}`, radius: form.radius, bandwidth: form.bandwidth } });
       toast({ title: "Zone updated successfully" });
       navigate("/dashboard/k-zones");
     } catch {
@@ -69,8 +88,17 @@ const EditZone = () => {
             <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           </div>
           <div className="space-y-2">
-            <Label>Location</Label>
-            <Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
+            <Label>Location (GIS Coordinates)</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Latitude (-90 to 90)</Label>
+                <Input value={form.latitude} onChange={(e) => setForm({ ...form, latitude: formatCoord(e.target.value) })} placeholder="e.g. 3.84803" inputMode="decimal" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Longitude (-180 to 180)</Label>
+                <Input value={form.longitude} onChange={(e) => setForm({ ...form, longitude: formatCoord(e.target.value) })} placeholder="e.g. 11.50210" inputMode="decimal" />
+              </div>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

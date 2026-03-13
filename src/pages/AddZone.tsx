@@ -13,20 +13,47 @@ const AddZone = () => {
   const { user } = useAuth();
   const addZone = useAddWifiZone();
   const [name, setName] = useState("");
-  const [location, setLocation] = useState("");
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
   const [radius, setRadius] = useState("");
   const [bandwidth, setBandwidth] = useState("");
 
+  const formatCoord = (value: string) => {
+    // Allow negative sign, digits, and one decimal point only
+    const cleaned = value.replace(/[^0-9.\-]/g, "");
+    const parts = cleaned.split(".");
+    if (parts.length > 2) return parts[0] + "." + parts.slice(1).join("");
+    if (parts[1] && parts[1].length > 5) return parts[0] + "." + parts[1].slice(0, 5);
+    return cleaned;
+  };
+
+  const isValidCoord = (val: string, type: "lat" | "lng") => {
+    const num = parseFloat(val);
+    if (isNaN(num)) return false;
+    if (type === "lat") return num >= -90 && num <= 90;
+    return num >= -180 && num <= 180;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !location.trim() || !radius || !bandwidth) {
+    if (!name.trim() || !latitude || !longitude || !radius || !bandwidth) {
       toast({ title: "Please fill in all fields", variant: "destructive" });
       return;
     }
+    if (!isValidCoord(latitude, "lat")) {
+      toast({ title: "Latitude must be between -90 and 90", variant: "destructive" });
+      return;
+    }
+    if (!isValidCoord(longitude, "lng")) {
+      toast({ title: "Longitude must be between -180 and 180", variant: "destructive" });
+      return;
+    }
+    const lat = parseFloat(latitude).toFixed(5);
+    const lng = parseFloat(longitude).toFixed(5);
     try {
       await addZone.mutateAsync({
         name: name.trim(),
-        location: location.trim(),
+        location: `${lat},${lng}`,
         radius: Number(radius),
         bandwidth: Number(bandwidth),
         owner_id: user?.id,
@@ -65,10 +92,28 @@ const AddZone = () => {
                 <Input id="name" placeholder="Zone Display Name" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="location" className="text-sm font-medium">Location</Label>
-                <div className="relative">
-                  <Input id="location" placeholder="X.XXXXX N, X.XXXXX E" value={location} onChange={(e) => setLocation(e.target.value)} maxLength={50} className="pr-10" />
-                  <MapPin size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600" />
+                <Label className="text-sm font-medium">Location (GIS Coordinates)</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="latitude" className="text-xs text-muted-foreground">Latitude (-90 to 90)</Label>
+                    <Input
+                      id="latitude"
+                      placeholder="e.g. 3.84803"
+                      value={latitude}
+                      onChange={(e) => setLatitude(formatCoord(e.target.value))}
+                      inputMode="decimal"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="longitude" className="text-xs text-muted-foreground">Longitude (-180 to 180)</Label>
+                    <Input
+                      id="longitude"
+                      placeholder="e.g. 11.50210"
+                      value={longitude}
+                      onChange={(e) => setLongitude(formatCoord(e.target.value))}
+                      inputMode="decimal"
+                    />
+                  </div>
                 </div>
               </div>
               <div className="space-y-2">
