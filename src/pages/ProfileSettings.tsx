@@ -132,7 +132,7 @@ const ProfileSettings = () => {
         </Button>
       </div>
 
-      <div className="bg-card rounded-xl border border-border p-6 max-w-lg space-y-5">
+      <div className="bg-card rounded-xl border border-border p-6 max-w-lg mx-auto space-y-5">
         <div className="flex items-center gap-2">
           <Lock size={18} className="text-muted-foreground" />
           <h2 className="text-lg font-semibold text-foreground">Change Password</h2>
