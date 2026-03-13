@@ -60,7 +60,7 @@ AS $$
   LIMIT 1
 $$;
 
--- 5. Auto-create profile on signup
+-- 5. Auto-create profile AND assign 'owner' role on signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -74,6 +74,11 @@ BEGIN
     COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
     NEW.email
   );
+
+  -- Auto-assign 'owner' role to all new signups
+  INSERT INTO public.user_roles (user_id, role)
+  VALUES (NEW.id, 'owner');
+
   RETURN NEW;
 END;
 $$;
