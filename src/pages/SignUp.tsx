@@ -46,7 +46,7 @@ const SignUp = () => {
 
     toast({
       title: "Account created!",
-      description: "Please check your email to verify your account. An admin will assign your role.",
+      description: "Please check your email to verify your account.",
     });
     setLoading(false);
   };
