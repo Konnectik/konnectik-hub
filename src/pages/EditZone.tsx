@@ -88,8 +88,17 @@ const EditZone = () => {
             <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           </div>
           <div className="space-y-2">
-            <Label>Location</Label>
-            <Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
+            <Label>Location (GIS Coordinates)</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Latitude (-90 to 90)</Label>
+                <Input value={form.latitude} onChange={(e) => setForm({ ...form, latitude: formatCoord(e.target.value) })} placeholder="e.g. 3.84803" inputMode="decimal" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Longitude (-180 to 180)</Label>
+                <Input value={form.longitude} onChange={(e) => setForm({ ...form, longitude: formatCoord(e.target.value) })} placeholder="e.g. 11.50210" inputMode="decimal" />
+              </div>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

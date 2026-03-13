@@ -92,10 +92,28 @@ const AddZone = () => {
                 <Input id="name" placeholder="Zone Display Name" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="location" className="text-sm font-medium">Location</Label>
-                <div className="relative">
-                  <Input id="location" placeholder="X.XXXXX N, X.XXXXX E" value={location} onChange={(e) => setLocation(e.target.value)} maxLength={50} className="pr-10" />
-                  <MapPin size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600" />
+                <Label className="text-sm font-medium">Location (GIS Coordinates)</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="latitude" className="text-xs text-muted-foreground">Latitude (-90 to 90)</Label>
+                    <Input
+                      id="latitude"
+                      placeholder="e.g. 3.84803"
+                      value={latitude}
+                      onChange={(e) => setLatitude(formatCoord(e.target.value))}
+                      inputMode="decimal"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="longitude" className="text-xs text-muted-foreground">Longitude (-180 to 180)</Label>
+                    <Input
+                      id="longitude"
+                      placeholder="e.g. 11.50210"
+                      value={longitude}
+                      onChange={(e) => setLongitude(formatCoord(e.target.value))}
+                      inputMode="decimal"
+                    />
+                  </div>
                 </div>
               </div>
               <div className="space-y-2">
