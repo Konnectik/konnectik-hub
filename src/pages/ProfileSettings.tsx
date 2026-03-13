@@ -81,15 +81,15 @@ const ProfileSettings = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
+    <div className="space-y-6 px-6 py-4">
+      <div className="flex items-center gap-3 max-w-lg mx-auto">
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
           <ArrowLeft size={18} />
         </Button>
         <h1 className="text-2xl font-bold text-foreground">Profile Settings</h1>
       </div>
 
-      <div className="bg-card rounded-xl border border-border p-6 max-w-lg space-y-5">
+      <div className="bg-card rounded-xl border border-border p-6 max-w-lg mx-auto space-y-5">
         <div className="space-y-1.5">
           <Label>Email</Label>
           <Input value={user?.email || ""} disabled className="opacity-60" />
