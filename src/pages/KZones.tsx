@@ -6,6 +6,9 @@ import PageTabs from "@/components/PageTabs";
 import { useWifiZones } from "@/hooks/use-wifi-zones";
 import { useRouters } from "@/hooks/use-routers";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 
 const tabs = ["Zones", "Routers"];
 
@@ -14,8 +17,15 @@ const KZones = () => {
   const navigate = useNavigate();
   const { data: zones = [], isLoading: zonesLoading } = useWifiZones();
   const { data: routers = [], isLoading: routersLoading } = useRouters();
+  const [mapZone, setMapZone] = useState<{ name: string; lat: number; lng: number } | null>(null);
 
   const isLoading = activeTab === "Zones" ? zonesLoading : routersLoading;
+
+  const parseLocation = (location: string) => {
+    const [lat, lng] = location.split(",").map((s) => parseFloat(s.trim()));
+    if (!isNaN(lat) && !isNaN(lng)) return { lat, lng };
+    return null;
+  };
 
   return (
     <div>
@@ -82,10 +92,35 @@ const KZones = () => {
                             <td className="py-4 px-4 font-medium">{zone.name}</td>
                             <td className="py-4 px-4 text-sm text-muted-foreground">
                               <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded bg-muted flex items-center justify-center">
-                                  <MapPin size={14} className="text-muted-foreground" />
-                                </div>
-                                {zone.location}
+                                {(() => {
+                                  const coords = parseLocation(zone.location);
+                                  if (coords) {
+                                    return (
+                                      <button
+                                        type="button"
+                                        className="w-12 h-12 rounded border border-border overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-primary/50 transition-all"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setMapZone({ name: zone.name, lat: coords.lat, lng: coords.lng });
+                                        }}
+                                        title="View on map"
+                                      >
+                                        <img
+                                          src={`https://staticmap.openstreetmap.de/staticmap.php?center=${coords.lat},${coords.lng}&zoom=14&size=96x96&markers=${coords.lat},${coords.lng},red-pushpin`}
+                                          alt="Map"
+                                          className="w-full h-full object-cover"
+                                          loading="lazy"
+                                        />
+                                      </button>
+                                    );
+                                  }
+                                  return (
+                                    <div className="w-12 h-12 rounded bg-muted flex items-center justify-center flex-shrink-0">
+                                      <MapPin size={14} className="text-muted-foreground" />
+                                    </div>
+                                  );
+                                })()}
+                                <span>{zone.location}</span>
                               </div>
                             </td>
                             <td className="py-4 px-4 text-sm">{zone.radius}</td>
@@ -133,6 +168,43 @@ const KZones = () => {
           )}
         </div>
       </div>
+
+      {/* Map Dialog */}
+      <Dialog open={!!mapZone} onOpenChange={(open) => !open && setMapZone(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MapPin size={18} className="text-primary" />
+              {mapZone?.name}
+            </DialogTitle>
+          </DialogHeader>
+          {mapZone && (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Coordinates: {mapZone.lat.toFixed(5)}, {mapZone.lng.toFixed(5)}
+              </p>
+              <div className="rounded-lg overflow-hidden border border-border">
+                <iframe
+                  title="Zone Location"
+                  width="100%"
+                  height="350"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  src={`https://www.openstreetmap.org/export/embed.html?bbox=${mapZone.lng - 0.01},${mapZone.lat - 0.006},${mapZone.lng + 0.01},${mapZone.lat + 0.006}&layer=mapnik&marker=${mapZone.lat},${mapZone.lng}`}
+                />
+              </div>
+              <a
+                href={`https://www.openstreetmap.org/?mlat=${mapZone.lat}&mlon=${mapZone.lng}#map=16/${mapZone.lat}/${mapZone.lng}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-primary hover:underline"
+              >
+                Open in OpenStreetMap ↗
+              </a>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
