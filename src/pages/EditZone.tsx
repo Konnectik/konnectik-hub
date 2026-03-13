@@ -40,8 +40,18 @@ const EditZone = () => {
 
   const handleSave = async () => {
     if (!id) return;
+    const lat = parseFloat(form.latitude);
+    const lng = parseFloat(form.longitude);
+    if (isNaN(lat) || lat < -90 || lat > 90) {
+      toast({ title: "Latitude must be between -90 and 90", variant: "destructive" });
+      return;
+    }
+    if (isNaN(lng) || lng < -180 || lng > 180) {
+      toast({ title: "Longitude must be between -180 and 180", variant: "destructive" });
+      return;
+    }
     try {
-      await updateZone.mutateAsync({ id, updates: form });
+      await updateZone.mutateAsync({ id, updates: { name: form.name, location: `${lat.toFixed(5)},${lng.toFixed(5)}`, radius: form.radius, bandwidth: form.bandwidth } });
       toast({ title: "Zone updated successfully" });
       navigate("/dashboard/k-zones");
     } catch {
