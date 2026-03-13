@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Save, Lock } from "lucide-react";
+import { ArrowLeft, Save, Lock, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +24,8 @@ const ProfileSettings = () => {
     newPassword: "",
     confirmPassword: "",
   });
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -137,21 +139,43 @@ const ProfileSettings = () => {
         </div>
         <div className="space-y-1.5">
           <Label>New Password</Label>
-          <Input
-            type="password"
-            value={passwords.newPassword}
-            onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
-            placeholder="Min. 6 characters"
-          />
+          <div className="relative">
+            <Input
+              type={showNewPassword ? "text" : "password"}
+              value={passwords.newPassword}
+              onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
+              placeholder="Min. 6 characters"
+              className="pr-10"
+            />
+            <button
+              type="button"
+              className="absolute inset-y-0 right-2 flex items-center justify-center text-muted-foreground"
+              onClick={() => setShowNewPassword((prev) => !prev)}
+              aria-label={showNewPassword ? "Hide password" : "Show password"}
+            >
+              {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
         </div>
         <div className="space-y-1.5">
           <Label>Confirm New Password</Label>
-          <Input
-            type="password"
-            value={passwords.confirmPassword}
-            onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
-            placeholder="Re-enter new password"
-          />
+          <div className="relative">
+            <Input
+              type={showConfirmPassword ? "text" : "password"}
+              value={passwords.confirmPassword}
+              onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
+              placeholder="Re-enter new password"
+              className="pr-10"
+            />
+            <button
+              type="button"
+              className="absolute inset-y-0 right-2 flex items-center justify-center text-muted-foreground"
+              onClick={() => setShowConfirmPassword((prev) => !prev)}
+              aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+            >
+              {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
         </div>
         <Button onClick={handlePasswordChange} disabled={changingPassword} className="gap-2">
           <Lock size={16} />
