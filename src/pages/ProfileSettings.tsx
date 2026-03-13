@@ -91,6 +91,9 @@ const ProfileSettings = () => {
       </div>
 
       <div className="bg-card rounded-xl border border-border p-6 max-w-lg mx-auto space-y-5">
+        <div className="flex justify-center">
+          <AvatarUpload />
+        </div>
         <div className="space-y-1.5">
           <Label>Email</Label>
           <Input value={user?.email || ""} disabled className="opacity-60" />
