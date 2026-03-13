@@ -44,6 +44,7 @@ const KUsers = () => {
   const [selectedUser, setSelectedUser] = useState<{ id: string; full_name: string; role: AppRole | null } | null>(null);
   const [newRole, setNewRole] = useState<AppRole>("user");
   const [saving, setSaving] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const handleOpenRoleDialog = (user: { id: string; full_name: string; role: AppRole | null }) => {
     if (!isAdmin) return;
