@@ -61,6 +61,7 @@ const App = () => (
               <Route path="transactions" element={<Transx />} />
               <Route path="mybalance" element={<MyBalance />} />
               <Route path="help" element={<PlaceholderPage />} />
+              <Route path="profile" element={<ProfileSettings />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

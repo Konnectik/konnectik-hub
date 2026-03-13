@@ -100,7 +100,11 @@ const DashboardNav = () => {
           >
             <LogOut size={18} />
           </button>
-          <div className="flex items-center gap-3 ml-2">
+          <div
+            className="flex items-center gap-3 ml-2 cursor-pointer rounded-lg px-2 py-1 hover:bg-primary-foreground/10 transition-colors"
+            onClick={() => navigate("/dashboard/profile")}
+            title="Profile settings"
+          >
             <div className="text-right text-sm">
               <div className="font-semibold">{displayName}</div>
               <div className="text-xs opacity-80">{roleLabel}</div>
