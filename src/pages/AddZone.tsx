@@ -114,7 +114,24 @@ const AddZone = () => {
                       inputMode="decimal"
                     />
                   </div>
+              </div>
+              {/* Map Preview */}
+              {latitude && longitude && !isNaN(parseFloat(latitude)) && !isNaN(parseFloat(longitude)) && isValidCoord(latitude, "lat") && isValidCoord(longitude, "lng") && (
+                <div className="rounded-lg overflow-hidden border border-border mt-3">
+                  <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 text-xs text-muted-foreground">
+                    <MapPin size={14} className="text-primary" />
+                    <span>{parseFloat(latitude).toFixed(5)}, {parseFloat(longitude).toFixed(5)}</span>
+                  </div>
+                  <iframe
+                    title="Zone Location Preview"
+                    width="100%"
+                    height="200"
+                    style={{ border: 0 }}
+                    loading="lazy"
+                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${parseFloat(longitude) - 0.005},${parseFloat(latitude) - 0.003},${parseFloat(longitude) + 0.005},${parseFloat(latitude) + 0.003}&layer=mapnik&marker=${latitude},${longitude}`}
+                  />
                 </div>
+              )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="radius" className="text-sm font-medium">Radius of Action (In Meters)</Label>
