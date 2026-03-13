@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Save, Lock, Eye, EyeOff } from "lucide-react";
+import AvatarUpload from "@/components/AvatarUpload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -90,6 +91,9 @@ const ProfileSettings = () => {
       </div>
 
       <div className="bg-card rounded-xl border border-border p-6 max-w-lg mx-auto space-y-5">
+        <div className="flex justify-center">
+          <AvatarUpload />
+        </div>
         <div className="space-y-1.5">
           <Label>Email</Label>
           <Input value={user?.email || ""} disabled className="opacity-60" />
