@@ -136,6 +136,8 @@ const KUsers = () => {
                         </td>
                         <td className="py-3 px-4 text-sm">{user.email}</td>
                         <td className="py-3 px-4 text-sm">{user.phone || '—'}</td>
+                        <td className="py-3 px-4 text-sm capitalize">{user.gender || '—'}</td>
+                        <td className="py-3 px-4 text-sm">{user.date_of_birth || '—'}</td>
                         <td className="py-3 px-4">
                           <div className="text-sm font-semibold">{date.toLocaleDateString()}</div>
                           <div className="text-xs text-muted-foreground">{date.toLocaleTimeString()}</div>
