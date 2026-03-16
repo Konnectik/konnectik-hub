@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import type { AppRole } from "@/types/database";
+import { SUPER_ADMIN_ID } from "@/lib/constants";
 
 const tabs = ["K-Users", "K-Owners", "K-Admins"];
 
@@ -37,7 +38,7 @@ const roleMap: Record<string, AppRole> = {
 const KUsers = () => {
   const [activeTab, setActiveTab] = useState("K-Users");
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const { data: users = [], isLoading } = useUsers(roleMap[activeTab]);
   const queryClient = useQueryClient();
 
@@ -46,10 +47,17 @@ const KUsers = () => {
   const [saving, setSaving] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const handleOpenRoleDialog = (user: { id: string; full_name: string; role: AppRole | null }) => {
+  const isSuperAdmin = user?.id === SUPER_ADMIN_ID;
+
+  const handleOpenRoleDialog = (userItem: { id: string; full_name: string; role: AppRole | null }) => {
     if (!isAdmin) return;
-    setSelectedUser(user);
-    setNewRole(user.role || "user");
+    // Non-super admins cannot manage admin users or the super admin account
+    if (!isSuperAdmin && (userItem.role === 'admin' || userItem.id === SUPER_ADMIN_ID)) {
+      toast({ title: "Access denied", description: "Only the super admin can manage admin roles.", variant: "destructive" });
+      return;
+    }
+    setSelectedUser(userItem);
+    setNewRole(userItem.role || "user");
   };
 
   const handleChangeRole = async () => {
@@ -172,7 +180,7 @@ const KUsers = () => {
               <SelectContent>
                 <SelectItem value="user">User</SelectItem>
                 <SelectItem value="owner">Owner</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
+                {isSuperAdmin && <SelectItem value="admin">Admin</SelectItem>}
               </SelectContent>
             </Select>
           </div>
