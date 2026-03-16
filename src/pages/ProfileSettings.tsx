@@ -37,6 +37,8 @@ const ProfileSettings = () => {
         phone: profile.phone || "",
         address: profile.address || "",
         company: profile.company || "",
+        gender: profile.gender || "",
+        date_of_birth: profile.date_of_birth || "",
       });
     }
   }, [profile]);
