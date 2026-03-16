@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import AdminRoute from "@/components/AdminRoute";
 import Index from "./pages/Index";
 import SignUp from "./pages/SignUp";
 import SignIn from "./pages/SignIn";
@@ -53,11 +54,11 @@ const App = () => (
               <Route path="k-zones/add-router" element={<AddRouter />} />
               <Route path="k-zones/zone/:id" element={<EditZone />} />
               <Route path="k-zones/router/:id" element={<EditRouter />} />
-              <Route path="users" element={<KUsers />} />
-              <Route path="users/add" element={<AddUser />} />
-              <Route path="k-plans" element={<KPlans />} />
-              <Route path="k-plans/add" element={<AddBundle />} />
-              <Route path="k-plans/:id" element={<EditBundle />} />
+              <Route path="users" element={<AdminRoute><KUsers /></AdminRoute>} />
+              <Route path="users/add" element={<AdminRoute><AddUser /></AdminRoute>} />
+              <Route path="k-plans" element={<AdminRoute><KPlans /></AdminRoute>} />
+              <Route path="k-plans/add" element={<AdminRoute><AddBundle /></AdminRoute>} />
+              <Route path="k-plans/:id" element={<AdminRoute><EditBundle /></AdminRoute>} />
               <Route path="transactions" element={<Transx />} />
               <Route path="mybalance" element={<MyBalance />} />
               <Route path="help" element={<PlaceholderPage />} />
