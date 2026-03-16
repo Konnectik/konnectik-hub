@@ -20,6 +20,8 @@ const ProfileSettings = () => {
     phone: "",
     address: "",
     company: "",
+    gender: "" as string,
+    date_of_birth: "",
   });
   const [passwords, setPasswords] = useState({
     newPassword: "",
