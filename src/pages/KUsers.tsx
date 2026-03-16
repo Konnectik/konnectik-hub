@@ -47,10 +47,17 @@ const KUsers = () => {
   const [saving, setSaving] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const handleOpenRoleDialog = (user: { id: string; full_name: string; role: AppRole | null }) => {
+  const isSuperAdmin = user?.id === SUPER_ADMIN_ID;
+
+  const handleOpenRoleDialog = (userItem: { id: string; full_name: string; role: AppRole | null }) => {
     if (!isAdmin) return;
-    setSelectedUser(user);
-    setNewRole(user.role || "user");
+    // Non-super admins cannot manage admin users or the super admin account
+    if (!isSuperAdmin && (userItem.role === 'admin' || userItem.id === SUPER_ADMIN_ID)) {
+      toast({ title: "Access denied", description: "Only the super admin can manage admin roles.", variant: "destructive" });
+      return;
+    }
+    setSelectedUser(userItem);
+    setNewRole(userItem.role || "user");
   };
 
   const handleChangeRole = async () => {
