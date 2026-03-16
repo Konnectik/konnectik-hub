@@ -8,9 +8,9 @@ import KonnectikLogo from "@/assets/logo-white.png";
 
 const navItems = [
   { label: "Dashboard", path: "/dashboard", exact: true },
-  { label: "Users", path: "/dashboard/users" },
+  { label: "Users", path: "/dashboard/users", adminOnly: true },
   { label: "K-Zones", path: "/dashboard/k-zones" },
-  { label: "K-Plans", path: "/dashboard/k-plans" },
+  { label: "K-Plans", path: "/dashboard/k-plans", adminOnly: true },
   { label: "Transactions", path: "/dashboard/transactions" },
   { label: "Help Center", path: "/dashboard/help" },
 ];
