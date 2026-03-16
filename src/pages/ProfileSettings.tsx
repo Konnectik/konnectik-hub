@@ -53,6 +53,8 @@ const ProfileSettings = () => {
         phone: form.phone || null,
         address: form.address || null,
         company: form.company || null,
+        gender: form.gender || null,
+        date_of_birth: form.date_of_birth || null,
       })
       .eq("id", user.id);
 
