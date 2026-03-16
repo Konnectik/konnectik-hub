@@ -38,7 +38,7 @@ const roleMap: Record<string, AppRole> = {
 const KUsers = () => {
   const [activeTab, setActiveTab] = useState("K-Users");
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const { data: users = [], isLoading } = useUsers(roleMap[activeTab]);
   const queryClient = useQueryClient();
 
