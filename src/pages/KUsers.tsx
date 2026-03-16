@@ -112,13 +112,15 @@ const KUsers = () => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Name</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Email</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Phone</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Date Added</th>
-                    {isAdmin && <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Role</th>}
-                    <th className="w-10"></th>
-                  </tr>
+                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Name</th>
+                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Email</th>
+                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Phone</th>
+                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Gender</th>
+                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Date of Birth</th>
+                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Date Added</th>
+                     {isAdmin && <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Role</th>}
+                     <th className="w-10"></th>
+                   </tr>
                 </thead>
                 <tbody>
                   {users.map((user) => {
@@ -134,6 +136,8 @@ const KUsers = () => {
                         </td>
                         <td className="py-3 px-4 text-sm">{user.email}</td>
                         <td className="py-3 px-4 text-sm">{user.phone || '—'}</td>
+                        <td className="py-3 px-4 text-sm capitalize">{user.gender || '—'}</td>
+                        <td className="py-3 px-4 text-sm">{user.date_of_birth || '—'}</td>
                         <td className="py-3 px-4">
                           <div className="text-sm font-semibold">{date.toLocaleDateString()}</div>
                           <div className="text-xs text-muted-foreground">{date.toLocaleTimeString()}</div>
