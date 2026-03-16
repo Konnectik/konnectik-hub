@@ -135,7 +135,28 @@ const ProfileSettings = () => {
             placeholder="Company or business name"
           />
         </div>
-
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label>Gender</Label>
+            <select
+              value={form.gender}
+              onChange={(e) => setForm({ ...form, gender: e.target.value })}
+              className="border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring flex h-10 w-full items-center rounded-md border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+            >
+              <option value="">Select gender</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Date of Birth</Label>
+            <Input
+              type="date"
+              value={form.date_of_birth}
+              onChange={(e) => setForm({ ...form, date_of_birth: e.target.value })}
+            />
+          </div>
+        </div>
         <Button onClick={handleSave} disabled={saving} className="gap-2">
           <Save size={16} />
           {saving ? "Saving…" : "Save Changes"}
