@@ -51,7 +51,9 @@ const DashboardNav = () => {
           </Link>
 
           <nav className="flex items-end gap-0.5">
-            {navItems.map((item) => {
+            {navItems
+              .filter((item) => !item.adminOnly || role === 'admin')
+              .map((item) => {
               const isActive = item.exact
                 ? location.pathname === item.path
                 : location.pathname.startsWith(item.path) && !item.exact;
