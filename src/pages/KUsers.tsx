@@ -180,7 +180,7 @@ const KUsers = () => {
               <SelectContent>
                 <SelectItem value="user">User</SelectItem>
                 <SelectItem value="owner">Owner</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
+                {isSuperAdmin && <SelectItem value="admin">Admin</SelectItem>}
               </SelectContent>
             </Select>
           </div>
