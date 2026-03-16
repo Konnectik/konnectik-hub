@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import type { AppRole } from "@/types/database";
+import { SUPER_ADMIN_ID } from "@/lib/constants";
 
 const tabs = ["K-Users", "K-Owners", "K-Admins"];
 
