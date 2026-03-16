@@ -59,6 +59,8 @@ export interface Profile {
   address: string | null;
   company: string | null;
   avatar_url: string | null;
+  gender: 'male' | 'female' | null;
+  date_of_birth: string | null;
   created_at: string;
   updated_at: string;
 }
