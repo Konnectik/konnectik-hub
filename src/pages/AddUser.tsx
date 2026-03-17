@@ -48,7 +48,18 @@ const AddUser = () => {
 
     setSubmitting(true);
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
+      if (!accessToken) {
+        throw new Error("Your session expired. Please sign in again.");
+      }
+
       const { data, error } = await supabase.functions.invoke("admin-create-user", {
+        headers: {
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          "x-user-authorization": `Bearer ${accessToken}`,
+        },
         body: {
           email,
           password,
