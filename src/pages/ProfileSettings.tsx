@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Save, Lock, Eye, EyeOff } from "lucide-react";
 import AvatarUpload from "@/components/AvatarUpload";
 import { Button } from "@/components/ui/button";
@@ -11,9 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const ProfileSettings = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const isSetupMode = searchParams.get("setup") === "true";
-  const { profile, user, profileComplete } = useAuth();
+  const { profile, user } = useAuth();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
@@ -45,26 +43,8 @@ const ProfileSettings = () => {
     }
   }, [profile]);
 
-  // Whether immutable fields are already set (locked)
-  const isNameLocked = !!profile?.full_name;
-  const isGenderLocked = !!profile?.gender;
-  const isDobLocked = !!profile?.date_of_birth;
-
   const handleSave = async () => {
     if (!user) return;
-
-    // In setup mode, require all mandatory fields
-    if (isSetupMode || !profileComplete) {
-      if (!form.full_name.trim() || !form.gender || !form.date_of_birth) {
-        toast({
-          title: "Please complete all required fields",
-          description: "Full name, gender, and date of birth are required.",
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-
     setSaving(true);
     const { error } = await supabase
       .from("profiles")
@@ -83,12 +63,7 @@ const ProfileSettings = () => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Profile updated" });
-      if (isSetupMode) {
-        // Redirect to dashboard after completing profile setup
-        window.location.href = "/dashboard";
-      } else {
-        window.location.reload();
-      }
+      window.location.reload();
     }
   };
 
@@ -115,21 +90,11 @@ const ProfileSettings = () => {
   return (
     <div className="space-y-6 px-6 py-4">
       <div className="flex items-center gap-3 max-w-lg mx-auto">
-        {!isSetupMode && (
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft size={18} />
-          </Button>
-        )}
-        <h1 className="text-2xl font-bold text-foreground">
-          {isSetupMode ? "Complete Your Profile" : "Profile Settings"}
-        </h1>
+        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <ArrowLeft size={18} />
+        </Button>
+        <h1 className="text-2xl font-bold text-foreground">Profile Settings</h1>
       </div>
-
-      {isSetupMode && (
-        <div className="max-w-lg mx-auto bg-primary/10 border border-primary/20 rounded-lg p-4 text-sm text-foreground">
-          Please complete your profile information below. <strong>Name, gender, and date of birth cannot be changed later.</strong>
-        </div>
-      )}
 
       <div className="bg-card rounded-xl border border-border p-6 max-w-lg mx-auto space-y-5">
         <div className="flex justify-center">
@@ -140,16 +105,11 @@ const ProfileSettings = () => {
           <Input value={user?.email || ""} disabled className="opacity-60" />
         </div>
         <div className="space-y-1.5">
-          <Label>Full Name {!isNameLocked && <span className="text-destructive">*</span>}</Label>
+          <Label>Full Name</Label>
           <Input
             value={form.full_name}
             onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-            disabled={isNameLocked}
-            className={isNameLocked ? "opacity-60" : ""}
           />
-          {isNameLocked && (
-            <p className="text-xs text-muted-foreground">This field cannot be changed.</p>
-          )}
         </div>
         <div className="space-y-1.5">
           <Label>Phone</Label>
@@ -177,38 +137,29 @@ const ProfileSettings = () => {
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label>Gender {!isGenderLocked && <span className="text-destructive">*</span>}</Label>
+            <Label>Gender</Label>
             <select
               value={form.gender}
               onChange={(e) => setForm({ ...form, gender: e.target.value })}
-              disabled={isGenderLocked}
-              className={`border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring flex h-10 w-full items-center rounded-md border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${isGenderLocked ? "opacity-60 cursor-not-allowed" : ""}`}
+              className="border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring flex h-10 w-full items-center rounded-md border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
             >
               <option value="">Select gender</option>
               <option value="male">Male</option>
               <option value="female">Female</option>
             </select>
-            {isGenderLocked && (
-              <p className="text-xs text-muted-foreground">This field cannot be changed.</p>
-            )}
           </div>
           <div className="space-y-1.5">
-            <Label>Date of Birth {!isDobLocked && <span className="text-destructive">*</span>}</Label>
+            <Label>Date of Birth</Label>
             <Input
               type="date"
               value={form.date_of_birth}
               onChange={(e) => setForm({ ...form, date_of_birth: e.target.value })}
-              disabled={isDobLocked}
-              className={isDobLocked ? "opacity-60" : ""}
             />
-            {isDobLocked && (
-              <p className="text-xs text-muted-foreground">This field cannot be changed.</p>
-            )}
           </div>
         </div>
         <Button onClick={handleSave} disabled={saving} className="gap-2">
           <Save size={16} />
-          {saving ? "Saving…" : isSetupMode ? "Complete Profile" : "Save Changes"}
+          {saving ? "Saving…" : "Save Changes"}
         </Button>
       </div>
 
