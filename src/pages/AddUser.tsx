@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ChevronRight, RefreshCw, Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, SUPABASE_ANON_KEY } from "@/integrations/supabase/client";
 
 const AddUser = () => {
   const navigate = useNavigate();
