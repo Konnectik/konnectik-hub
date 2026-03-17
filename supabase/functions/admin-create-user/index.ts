@@ -60,11 +60,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Use service role client to create user
-    const adminClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    // Create user via admin API (reusing adminClient from above)
 
     // Create user via admin API
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
