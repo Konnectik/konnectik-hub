@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "authorization, x-client-info, apikey, content-type, x-user-authorization, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 Deno.serve(async (req) => {
@@ -61,21 +61,22 @@ Deno.serve(async (req) => {
     }
 
     // Parse request body
-    const { email, password, full_name, phone, gender, date_of_birth, role } = await req.json();
+    const { email, full_name, phone, gender, date_of_birth, role } = await req.json();
 
-    if (!email || !password || !full_name) {
-      return new Response(JSON.stringify({ error: "Email, password, and full name are required" }), {
+    if (!email || !full_name) {
+      return new Response(JSON.stringify({ error: "Email and full name are required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Create user via admin API (reusing adminClient from above)
+    // Generate a strong random password (user will set their own via magic link)
+    const randomPassword = crypto.randomUUID() + "!Aa1";
 
     // Create user via admin API
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
       email,
-      password,
+      password: randomPassword,
       email_confirm: true,
       user_metadata: { full_name, signup_source: "admin_created" },
     });
@@ -112,26 +113,24 @@ Deno.serve(async (req) => {
       console.error("Role assignment error:", roleError);
     }
 
-    // Send welcome email with password via Supabase's built-in email
-    // The user will be prompted to change their password on first login
-    // We'll use the resetPasswordForEmail to send a password reset link
-    const { error: resetError } = await adminClient.auth.admin.generateLink({
+    // Send magic link invitation email
+    const { error: magicLinkError } = await adminClient.auth.admin.generateLink({
       type: "magiclink",
       email,
       options: {
-        redirectTo: `${req.headers.get("origin") || Deno.env.get("SITE_URL") || ""}/dashboard/profile`,
+        redirectTo: `${req.headers.get("origin") || Deno.env.get("SITE_URL") || ""}/dashboard/profile?setup=true`,
       },
     });
 
-    if (resetError) {
-      console.error("Email link error:", resetError);
+    if (magicLinkError) {
+      console.error("Magic link error:", magicLinkError);
     }
 
     return new Response(
       JSON.stringify({
         success: true,
         user_id: newUser.user.id,
-        message: "User created successfully",
+        message: "User created and invitation sent successfully",
       }),
       {
         status: 200,
