@@ -71,23 +71,27 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Generate a strong random password (user will set their own via magic link)
-    const randomPassword = crypto.randomUUID() + "!Aa1";
+    // Determine redirect URL from request origin
+    const origin = req.headers.get("origin") || Deno.env.get("SITE_URL") || "";
+    const redirectTo = `${origin}/dashboard/profile?setup=true`;
 
-    // Create user via admin API
-    const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
+    // Invite user by email — this creates the user AND sends the invite email
+    const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
       email,
-      password: randomPassword,
-      email_confirm: true,
-      user_metadata: { full_name, signup_source: "admin_created" },
-    });
+      {
+        data: { full_name, signup_source: "admin_created" },
+        redirectTo,
+      }
+    );
 
-    if (createError) {
-      return new Response(JSON.stringify({ error: createError.message }), {
+    if (inviteError) {
+      return new Response(JSON.stringify({ error: inviteError.message }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const newUserId = inviteData.user.id;
 
     // Update profile with additional fields
     const { error: profileError } = await adminClient
@@ -98,39 +102,29 @@ Deno.serve(async (req) => {
         gender: gender || null,
         date_of_birth: date_of_birth || null,
       })
-      .eq("id", newUser.user.id);
+      .eq("id", newUserId);
 
     if (profileError) {
       console.error("Profile update error:", profileError);
     }
 
-    // Assign role
-    const assignRole = role && ["owner", "user"].includes(role) ? role : "user";
+    // Assign role — allow admin, owner, or user
+    const assignRole = role && ["admin", "owner", "user"].includes(role) ? role : "user";
     const { error: roleError } = await adminClient
       .from("user_roles")
-      .insert({ user_id: newUser.user.id, role: assignRole });
+      .upsert(
+        { user_id: newUserId, role: assignRole },
+        { onConflict: "user_id, role" }
+      );
 
     if (roleError) {
       console.error("Role assignment error:", roleError);
     }
 
-    // Send magic link invitation email
-    const { error: magicLinkError } = await adminClient.auth.admin.generateLink({
-      type: "magiclink",
-      email,
-      options: {
-        redirectTo: `${req.headers.get("origin") || Deno.env.get("SITE_URL") || ""}/dashboard/profile?setup=true`,
-      },
-    });
-
-    if (magicLinkError) {
-      console.error("Magic link error:", magicLinkError);
-    }
-
     return new Response(
       JSON.stringify({
         success: true,
-        user_id: newUser.user.id,
+        user_id: newUserId,
         message: "User created and invitation sent successfully",
       }),
       {
