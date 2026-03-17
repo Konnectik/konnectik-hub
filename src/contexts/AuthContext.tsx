@@ -26,6 +26,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   isAdmin: boolean;
   isOwner: boolean;
+  profileComplete: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
