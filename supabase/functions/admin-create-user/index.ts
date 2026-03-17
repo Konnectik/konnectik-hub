@@ -21,28 +21,26 @@ Deno.serve(async (req) => {
       });
     }
 
-    const anonClient = createClient(
+    // Use service role client to verify the caller
+    const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
+    const { data: { user: caller }, error: userError } = await adminClient.auth.getUser(token);
+    if (userError || !caller) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const callerUserId = claimsData.claims.sub;
-
     // Check caller is admin
-    const { data: roleData } = await anonClient
+    const { data: roleData } = await adminClient
       .from("user_roles")
       .select("role")
-      .eq("user_id", callerUserId)
+      .eq("user_id", caller.id)
       .single();
 
     if (!roleData || roleData.role !== "admin") {
