@@ -155,6 +155,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         signOut,
         isAdmin: role === 'admin',
         isOwner: role === 'owner',
+        profileComplete: !!(profile?.full_name && profile?.gender && profile?.date_of_birth),
       }}
     >
       {children}
