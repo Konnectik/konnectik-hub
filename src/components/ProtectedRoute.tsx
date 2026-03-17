@@ -1,9 +1,10 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading, role } = useAuth();
+  const { user, loading, role, profileComplete } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -20,6 +21,12 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   // Only admin and owner roles can access
   if (role && role !== 'admin' && role !== 'owner') {
     return <Navigate to="/signin" replace />;
+  }
+
+  // Force profile completion for new users
+  const isProfilePage = location.pathname === '/dashboard/profile';
+  if (!profileComplete && !isProfilePage && role) {
+    return <Navigate to="/dashboard/profile?setup=true" replace />;
   }
 
   return <>{children}</>;

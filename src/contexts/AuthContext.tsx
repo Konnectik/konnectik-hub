@@ -26,6 +26,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   isAdmin: boolean;
   isOwner: boolean;
+  profileComplete: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -154,6 +155,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         signOut,
         isAdmin: role === 'admin',
         isOwner: role === 'owner',
+        profileComplete: !!(profile?.full_name && profile?.gender && profile?.date_of_birth),
       }}
     >
       {children}
