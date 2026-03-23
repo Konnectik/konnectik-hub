@@ -141,7 +141,7 @@ const KUsers = () => {
                         <td className="py-3 px-4 text-sm">{user.date_of_birth || '—'}</td>
                         <td className="py-3 px-4 text-sm">
                           {user.terms_agreed_at ? (
-                            <span className="text-green-600 font-medium">✓ {new Date(user.terms_agreed_at).toLocaleDateString()}</span>
+                            <span className="text-primary font-medium">✓ {new Date(user.terms_agreed_at).toLocaleDateString()}</span>
                           ) : (
                             <span className="text-muted-foreground">—</span>
                           )}
