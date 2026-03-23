@@ -139,6 +139,13 @@ const KUsers = () => {
                         <td className="py-3 px-4 text-sm">{user.phone || '—'}</td>
                         <td className="py-3 px-4 text-sm capitalize">{user.gender || '—'}</td>
                         <td className="py-3 px-4 text-sm">{user.date_of_birth || '—'}</td>
+                        <td className="py-3 px-4 text-sm">
+                          {user.terms_agreed_at ? (
+                            <span className="text-green-600 font-medium">✓ {new Date(user.terms_agreed_at).toLocaleDateString()}</span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </td>
                         <td className="py-3 px-4">
                           <div className="text-sm font-semibold">{date.toLocaleDateString()}</div>
                           <div className="text-xs text-muted-foreground">{date.toLocaleTimeString()}</div>
