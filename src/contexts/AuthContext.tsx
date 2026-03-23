@@ -13,6 +13,7 @@ interface Profile {
   avatar_url: string | null;
   gender: 'male' | 'female' | null;
   date_of_birth: string | null;
+  terms_agreed_at: string | null;
 }
 
 interface AuthContextType {
