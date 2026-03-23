@@ -117,6 +117,7 @@ const KUsers = () => {
                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Phone</th>
                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Gender</th>
                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Date of Birth</th>
+                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Terms Agreed</th>
                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Date Added</th>
                      {isAdmin && <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Role</th>}
                      <th className="w-10"></th>
