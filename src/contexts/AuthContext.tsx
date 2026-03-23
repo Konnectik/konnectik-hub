@@ -13,6 +13,7 @@ interface Profile {
   avatar_url: string | null;
   gender: 'male' | 'female' | null;
   date_of_birth: string | null;
+  terms_agreed_at: string | null;
 }
 
 interface AuthContextType {
@@ -99,7 +100,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       email,
       password,
       options: {
-        data: { full_name: fullName, signup_source: 'platform' },
+        data: { full_name: fullName, signup_source: 'platform', terms_agreed_at: new Date().toISOString() },
         emailRedirectTo: window.location.origin,
       },
     });

@@ -135,6 +135,16 @@ const ProfileSettings = () => {
             placeholder="Company or business name"
           />
         </div>
+        {profile?.terms_agreed_at && (
+          <div className="space-y-1.5">
+            <Label>Terms & Policy Agreed</Label>
+            <Input
+              value={new Date(profile.terms_agreed_at).toLocaleString()}
+              disabled
+              className="opacity-60"
+            />
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label>Gender</Label>

@@ -117,6 +117,7 @@ const KUsers = () => {
                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Phone</th>
                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Gender</th>
                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Date of Birth</th>
+                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Terms Agreed</th>
                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Date Added</th>
                      {isAdmin && <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Role</th>}
                      <th className="w-10"></th>
@@ -138,6 +139,13 @@ const KUsers = () => {
                         <td className="py-3 px-4 text-sm">{user.phone || '—'}</td>
                         <td className="py-3 px-4 text-sm capitalize">{user.gender || '—'}</td>
                         <td className="py-3 px-4 text-sm">{user.date_of_birth || '—'}</td>
+                        <td className="py-3 px-4 text-sm">
+                          {user.terms_agreed_at ? (
+                            <span className="text-primary font-medium">✓ {new Date(user.terms_agreed_at).toLocaleDateString()}</span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </td>
                         <td className="py-3 px-4">
                           <div className="text-sm font-semibold">{date.toLocaleDateString()}</div>
                           <div className="text-xs text-muted-foreground">{date.toLocaleTimeString()}</div>
