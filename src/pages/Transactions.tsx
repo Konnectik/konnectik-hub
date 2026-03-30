@@ -1,24 +1,45 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Wallet } from "lucide-react";
+import { Wallet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import PageTabs from "@/components/PageTabs";
-import { useTransactions } from "@/hooks/use-transactions";
+import { useWalletTransactions } from "@/hooks/use-wallet-transactions";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import type { WalletTxStatus, WalletTxType } from "@/types/database";
 
-const tabs = ["Transactions"];
+const tabs = ["All", "Recharges", "Debits", "Refunds"];
 
-const statusStyles: Record<string, string> = {
-  Completed: "bg-green-100 text-green-700 border-green-200",
-  Pending: "bg-yellow-100 text-yellow-700 border-yellow-200",
-  Failed: "bg-red-100 text-red-700 border-red-200",
+const statusStyles: Record<WalletTxStatus, string> = {
+  confirmed: "bg-green-100 text-green-700 border-green-200",
+  pending: "bg-yellow-100 text-yellow-700 border-yellow-200",
+  failed: "bg-red-100 text-red-700 border-red-200",
+};
+
+const typeLabels: Record<WalletTxType, string> = {
+  recharge: "Recharge",
+  debit: "Debit",
+  refund: "Refund",
+  reward: "Reward",
+  gift: "Gift",
+};
+
+const typeFilterMap: Record<string, WalletTxType[] | null> = {
+  All: null,
+  Recharges: ["recharge"],
+  Debits: ["debit"],
+  Refunds: ["refund"],
 };
 
 const Transx = () => {
-  const [activeTab, setActiveTab] = useState("Transactions");
+  const [activeTab, setActiveTab] = useState("All");
   const navigate = useNavigate();
-  const { data: transactions = [], isLoading } = useTransactions();
+  const { data: transactions = [], isLoading } = useWalletTransactions();
+
+  const filtered = typeFilterMap[activeTab]
+    ? transactions.filter((tx) => typeFilterMap[activeTab]!.includes(tx.type))
+    : transactions;
 
   return (
     <div>
@@ -28,8 +49,8 @@ const Transx = () => {
         <div className="bg-card rounded-xl border p-6 animate-fade-in shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-xl font-bold">List of Transactions</h2>
-              <p className="text-sm text-muted-foreground">{transactions.length} transactions</p>
+              <h2 className="text-xl font-bold">Wallet Transactions</h2>
+              <p className="text-sm text-muted-foreground">{filtered.length} transactions</p>
             </div>
             <Button onClick={() => navigate("/dashboard/mybalance")}>
               <Wallet size={16} className="mr-2" />
@@ -44,52 +65,56 @@ const Transx = () => {
               ))}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">User</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Wi-Fi Zone</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Plan</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Amount</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Date</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Status</th>
-                    <th className="w-10"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {transactions.map((tx) => {
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Fee</TableHead>
+                    <TableHead>Net</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Reference</TableHead>
+                    <TableHead>Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((tx) => {
                     const date = new Date(tx.created_at);
                     return (
-                      <tr key={tx.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors cursor-pointer">
-                        <td className="py-4 px-4 font-medium">{tx.user_name}</td>
-                        <td className="py-4 px-4 text-sm text-muted-foreground">{tx.zone_name}</td>
-                        <td className="py-4 px-4 text-sm font-semibold">{tx.bundle_name}</td>
-                        <td className="py-4 px-4">
-                          <div className="text-sm font-semibold">{tx.amount.toLocaleString()}</div>
-                          <div className="text-xs text-muted-foreground">{tx.currency}</div>
-                        </td>
-                        <td className="py-4 px-4">
-                          <div className="text-sm font-semibold">{date.toLocaleDateString()}</div>
-                          <div className="text-xs text-muted-foreground">{date.toLocaleTimeString()}</div>
-                        </td>
-                        <td className="py-4 px-4">
+                      <TableRow key={tx.id}>
+                        <TableCell>
+                          <Badge variant="secondary" className="capitalize">
+                            {typeLabels[tx.type]}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-semibold">{tx.amount_xaf.toLocaleString()} XAF</TableCell>
+                        <TableCell className="text-muted-foreground">{tx.fee_xaf.toLocaleString()} XAF</TableCell>
+                        <TableCell className="font-bold">{tx.net_xaf.toLocaleString()} XAF</TableCell>
+                        <TableCell>
                           <Badge variant="outline" className={statusStyles[tx.status]}>
                             {tx.status}
                           </Badge>
-                        </td>
-                        <td className="py-4 px-4">
-                          <ChevronRight size={18} className="text-muted-foreground" />
-                        </td>
-                      </tr>
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-mono text-xs max-w-[120px] truncate block">{tx.reference}</span>
+                          {tx.mansar_ref && (
+                            <span className="text-xs text-muted-foreground block mt-0.5">Mansar: {tx.mansar_ref}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">{date.toLocaleDateString()}</div>
+                          <div className="text-xs text-muted-foreground">{date.toLocaleTimeString()}</div>
+                        </TableCell>
+                      </TableRow>
                     );
                   })}
-                </tbody>
-              </table>
-              {transactions.length === 0 && (
-                <p className="text-center text-muted-foreground py-8">No transactions yet.</p>
+                </TableBody>
+              </Table>
+              {filtered.length === 0 && (
+                <p className="text-center text-muted-foreground py-8">No transactions found.</p>
               )}
-            </div>
+            </>
           )}
         </div>
       </div>
