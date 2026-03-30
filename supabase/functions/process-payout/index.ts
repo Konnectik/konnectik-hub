@@ -2,10 +2,54 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 const MINIMUM_PAYOUT_XAF = 5000;
+
+// --- Netwallet token cache ---
+let cachedToken: string | null = null;
+let tokenExpiresAt = 0;
+
+async function getNetwalletToken(): Promise<string> {
+  if (cachedToken && Date.now() < tokenExpiresAt) return cachedToken;
+
+  const baseUrl = Deno.env.get('NETWALLET_BASE_URL') || 'http://sandbox.netwalletpay.com';
+  const res = await fetch(`${baseUrl}/api/v1/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      primary_key: Deno.env.get('NETWALLET_PRIMARY_KEY')!,
+      email: Deno.env.get('NETWALLET_EMAIL')!,
+      grant_type: 'primary_key',
+    }),
+  });
+
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`Netwallet token error ${res.status}: ${txt}`);
+  }
+
+  const json = await res.json();
+  cachedToken = json.access_token;
+  tokenExpiresAt = Date.now() + (json.expires_in - 60) * 1000;
+  return cachedToken!;
+}
+
+function mapProvider(method: string): { MethodType: string; MethodProvider: string } {
+  switch (method) {
+    case 'momo': return { MethodType: 'MOMO', MethodProvider: 'mtn_cm' };
+    case 'om': return { MethodType: 'ORANGE_MONEY', MethodProvider: 'orange_cm' };
+    default: return { MethodType: 'MOMO', MethodProvider: 'mtn_cm' };
+  }
+}
+
+async function computeHash(parts: string[]): Promise<string> {
+  const input = parts.join('_');
+  const encoder = new TextEncoder();
+  const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(input));
+  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -26,14 +70,16 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: authError } = await supabase.auth.getClaims(token);
+    if (authError || !claimsData?.claims) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    const userId = claimsData.claims.sub as string;
 
-    const { amount_xaf, payout_method, payout_destination } = await req.json();
+    const { amount_xaf, payout_method, phone_number } = await req.json();
 
     if (!amount_xaf || typeof amount_xaf !== 'number' || amount_xaf < MINIMUM_PAYOUT_XAF) {
       return new Response(JSON.stringify({ error: `Minimum payout is ${MINIMUM_PAYOUT_XAF} XAF` }), {
@@ -41,8 +87,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (!payout_method || !['momo', 'om', 'bank'].includes(payout_method)) {
-      return new Response(JSON.stringify({ error: 'Invalid payout_method (momo, om, bank)' }), {
+    if (!payout_method || !['momo', 'om'].includes(payout_method)) {
+      return new Response(JSON.stringify({ error: 'Invalid payout_method (momo, om)' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!phone_number || typeof phone_number !== 'string') {
+      return new Response(JSON.stringify({ error: 'phone_number is required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -52,11 +104,11 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Check user wallet balance
+    // Check wallet balance
     const { data: profile } = await adminClient
       .from('profiles')
       .select('wallet_balance_xaf')
-      .eq('id', user.id)
+      .eq('id', userId)
       .single();
 
     const currentBalance = profile?.wallet_balance_xaf ?? 0;
@@ -67,36 +119,73 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Calculate payout fee (mocked: 1.5%)
+    // Calculate fee (1.5%)
     const fee = Math.ceil(amount_xaf * 0.015);
     const net = amount_xaf - fee;
-    const reference = `PAY-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
+    const orderId = `PAY-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
 
-    // --- MOCKED MANSAR PAYOUT ---
-    // In production, this calls Mansar's disbursement API to send funds
-    // to the user's mobile money or bank account.
-    const mockMansarRef = `MANSAR-PAY-${crypto.randomUUID().slice(0, 12)}`;
-    // --- END MOCK ---
+    // --- Netwallet Payout API ---
+    const { MethodType, MethodProvider } = mapProvider(payout_method);
+    const secondaryKey = Deno.env.get('NETWALLET_SECONDARY_KEY')!;
+    const hash = await computeHash(['PAYOUT', 'MOBILE_MONEY', MethodProvider, orderId, secondaryKey]);
+
+    const baseUrl = Deno.env.get('NETWALLET_BASE_URL') || 'http://sandbox.netwalletpay.com';
+    const callbackUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/recharge-webhook`;
+
+    const nwToken = await getNetwalletToken();
+    const nwRes = await fetch(`${baseUrl}/api/v1/global/payout/request-transfer`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${nwToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        CurrencyCode: 'XAF',
+        OrderID: orderId,
+        Amount: net, // Send the net amount after fee
+        Method: 'MOBILE_MONEY',
+        MethodType,
+        CountryCode: 'CM',
+        MethodProvider,
+        PhoneNumber: phone_number,
+        Description: `Konnectik payout ${orderId}`,
+        CallbackUrl: callbackUrl,
+        Hash: hash,
+      }),
+    });
+
+    const nwBody = await nwRes.json();
+
+    if (!nwRes.ok || nwBody.statusCode !== 200) {
+      return new Response(JSON.stringify({
+        error: 'Payout provider error',
+        detail: nwBody.message || nwBody.errorCode || 'Unknown error',
+      }), {
+        status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const aggregatorRef = nwBody.data; // Netwallet transactionId
 
     // Debit wallet
     const newBalance = currentBalance - amount_xaf;
     await adminClient
       .from('profiles')
       .update({ wallet_balance_xaf: newBalance })
-      .eq('id', user.id);
+      .eq('id', userId);
 
     // Record wallet transaction
     const { data: tx, error: txError } = await adminClient
       .from('wallet_transactions')
       .insert({
-        user_id: user.id,
+        user_id: userId,
         type: 'debit',
         amount_xaf,
         fee_xaf: fee,
         net_xaf: net,
-        reference,
-        mansar_ref: mockMansarRef,
-        status: 'confirmed',
+        reference: orderId,
+        aggregator_ref: aggregatorRef,
+        status: 'pending', // Will be confirmed via webhook
       })
       .select('id, reference')
       .single();
@@ -106,19 +195,19 @@ Deno.serve(async (req) => {
       await adminClient
         .from('profiles')
         .update({ wallet_balance_xaf: currentBalance })
-        .eq('id', user.id);
+        .eq('id', userId);
       throw txError;
     }
 
     return new Response(JSON.stringify({
       transaction_id: tx.id,
       reference: tx.reference,
-      mansar_ref: mockMansarRef,
+      aggregator_ref: aggregatorRef,
       amount_xaf,
       fee_xaf: fee,
       net_xaf: net,
       new_balance_xaf: newBalance,
-      message: 'Payout processed successfully',
+      message: 'Payout initiated — awaiting provider confirmation',
     }), {
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
