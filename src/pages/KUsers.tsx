@@ -130,7 +130,7 @@ const KUsers = () => {
                       <tr
                         key={user.id}
                         className="border-b last:border-0 hover:bg-muted/50 transition-colors cursor-pointer"
-                        onClick={() => handleOpenRoleDialog({ id: user.id, full_name: user.full_name, role: user.role })}
+                        onClick={() => navigate(`/dashboard/users/${user.id}`)}
                       >
                         <td className="py-3 px-4">
                           <div className="text-sm font-semibold">{user.full_name}</div>
