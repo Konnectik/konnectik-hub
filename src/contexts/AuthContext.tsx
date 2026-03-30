@@ -14,6 +14,11 @@ interface Profile {
   gender: 'male' | 'female' | null;
   date_of_birth: string | null;
   terms_agreed_at: string | null;
+  wallet_balance_xaf: number;
+  referral_code: string | null;
+  referred_by: string | null;
+  first_trial_used_at: string | null;
+  last_monthly_gift_at: string | null;
 }
 
 interface AuthContextType {
