@@ -2,8 +2,31 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
+
+// Verify Netwallet callback token: sha256("{orderId}_{secondary_key}")
+async function verifyCallbackToken(token: string, orderId: string): Promise<boolean> {
+  const secondaryKey = Deno.env.get('NETWALLET_SECONDARY_KEY');
+  if (!secondaryKey) return false;
+
+  const input = `${orderId}_${secondaryKey}`;
+  const encoder = new TextEncoder();
+  const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(input));
+  const expected = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+  return token === expected;
+}
+
+// Map Netwallet status to our internal status
+function mapStatus(nwStatus: string): 'confirmed' | 'failed' {
+  switch (nwStatus.toUpperCase()) {
+    case 'SUCCESS': return 'confirmed';
+    case 'FAILED':
+    case 'CANCELLED':
+    case 'TIMEOUT':
+    default: return 'failed';
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -11,21 +34,17 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // In production, validate webhook signature from Mansar
-    // const signature = req.headers.get('x-mansar-signature');
-    // if (!verifySignature(signature, body, secret)) { return 401; }
-
     const body = await req.json();
-    const { mansar_ref, status, external_ref } = body;
+    const { Status, TransactionId } = body;
 
-    if (!mansar_ref || typeof mansar_ref !== 'string') {
-      return new Response(JSON.stringify({ error: 'mansar_ref is required' }), {
+    if (!TransactionId || typeof TransactionId !== 'string') {
+      return new Response(JSON.stringify({ error: 'TransactionId is required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    if (!status || !['success', 'failed'].includes(status)) {
-      return new Response(JSON.stringify({ error: 'status must be success or failed' }), {
+    if (!Status || typeof Status !== 'string') {
+      return new Response(JSON.stringify({ error: 'Status is required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -35,11 +54,11 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Find the pending transaction
+    // Find the pending transaction by aggregator_ref (Netwallet TransactionId)
     const { data: tx, error: txError } = await adminClient
       .from('wallet_transactions')
       .select('*')
-      .eq('mansar_ref', mansar_ref)
+      .eq('aggregator_ref', TransactionId)
       .eq('status', 'pending')
       .single();
 
@@ -49,14 +68,27 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (status === 'success') {
+    // Validate X-CallbackToken using the order's reference as orderId
+    const callbackToken = req.headers.get('X-CallbackToken');
+    if (callbackToken) {
+      const valid = await verifyCallbackToken(callbackToken, tx.reference);
+      if (!valid) {
+        return new Response(JSON.stringify({ error: 'Invalid callback token' }), {
+          status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    const internalStatus = mapStatus(Status);
+
+    if (internalStatus === 'confirmed') {
       // Update transaction to confirmed
       await adminClient
         .from('wallet_transactions')
         .update({ status: 'confirmed' })
         .eq('id', tx.id);
 
-      // Credit the user's wallet with the net amount
+      // Credit the user's wallet
       const { data: profile } = await adminClient
         .from('profiles')
         .select('wallet_balance_xaf')
@@ -69,12 +101,8 @@ Deno.serve(async (req) => {
         .update({ wallet_balance_xaf: currentBalance + tx.net_xaf })
         .eq('id', tx.user_id);
 
-      return new Response(JSON.stringify({
-        message: 'Recharge confirmed',
-        user_id: tx.user_id,
-        credited_xaf: tx.net_xaf,
-        new_balance_xaf: currentBalance + tx.net_xaf,
-      }), {
+      // Acknowledge to Netwallet
+      return new Response(JSON.stringify({ received: true }), {
         status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
 
@@ -85,10 +113,7 @@ Deno.serve(async (req) => {
         .update({ status: 'failed' })
         .eq('id', tx.id);
 
-      return new Response(JSON.stringify({
-        message: 'Recharge failed',
-        user_id: tx.user_id,
-      }), {
+      return new Response(JSON.stringify({ received: true }), {
         status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

@@ -169,7 +169,7 @@ export interface WalletTransaction {
   fee_xaf: number;
   net_xaf: number;
   reference: string;
-  mansar_ref: string | null;
+  aggregator_ref: string | null;
   status: WalletTxStatus;
   created_at: string;
 }

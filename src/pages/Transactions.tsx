@@ -98,8 +98,8 @@ const Transx = () => {
                         </TableCell>
                         <TableCell>
                           <span className="font-mono text-xs max-w-[120px] truncate block">{tx.reference}</span>
-                          {tx.mansar_ref && (
-                            <span className="text-xs text-muted-foreground block mt-0.5">Mansar: {tx.mansar_ref}</span>
+                          {tx.aggregator_ref && (
+                            <span className="text-xs text-muted-foreground block mt-0.5">Ref: {tx.aggregator_ref}</span>
                           )}
                         </TableCell>
                         <TableCell>
