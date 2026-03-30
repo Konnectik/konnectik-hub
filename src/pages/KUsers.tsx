@@ -130,7 +130,7 @@ const KUsers = () => {
                       <tr
                         key={user.id}
                         className="border-b last:border-0 hover:bg-muted/50 transition-colors cursor-pointer"
-                        onClick={() => handleOpenRoleDialog({ id: user.id, full_name: user.full_name, role: user.role })}
+                        onClick={() => navigate(`/dashboard/users/${user.id}`)}
                       >
                         <td className="py-3 px-4">
                           <div className="text-sm font-semibold">{user.full_name}</div>
@@ -152,7 +152,14 @@ const KUsers = () => {
                         </td>
                         {isAdmin && (
                           <td className="py-3 px-4">
-                            <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-muted">
+                            <span
+                              className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-muted hover:bg-primary/10 cursor-pointer transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenRoleDialog({ id: user.id, full_name: user.full_name, role: user.role });
+                              }}
+                              title="Change role"
+                            >
                               <Shield size={12} />
                               {user.role || "user"}
                             </span>
