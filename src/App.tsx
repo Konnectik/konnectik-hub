@@ -26,6 +26,7 @@ import EditZone from "./pages/EditZone";
 import EditRouter from "./pages/EditRouter";
 import EditBundle from "./pages/EditBundle";
 import ProfileSettings from "./pages/ProfileSettings";
+import UserDetail from "./pages/UserDetail";
 
 const queryClient = new QueryClient();
 
