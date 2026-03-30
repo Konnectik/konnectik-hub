@@ -57,6 +57,7 @@ const App = () => (
               <Route path="k-zones/router/:id" element={<EditRouter />} />
               <Route path="users" element={<AdminRoute><KUsers /></AdminRoute>} />
               <Route path="users/add" element={<AdminRoute><AddUser /></AdminRoute>} />
+              <Route path="users/:id" element={<AdminRoute><UserDetail /></AdminRoute>} />
               <Route path="k-plans" element={<AdminRoute><KPlans /></AdminRoute>} />
               <Route path="k-plans/add" element={<AdminRoute><AddBundle /></AdminRoute>} />
               <Route path="k-plans/:id" element={<AdminRoute><EditBundle /></AdminRoute>} />
