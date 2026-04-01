@@ -5,6 +5,25 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+function formatTimeLimit(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = Math.floor(minutes % 60);
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`;
+}
+
+async function callMikrotikRelay(action: string, payload: Record<string, unknown>) {
+  const url = Deno.env.get('MIKROTIK_RELAY_URL');
+  const apiKey = Deno.env.get('MIKROTIK_RELAY_API_KEY');
+  if (!url || !apiKey) throw new Error('Mikrotik relay not configured');
+  const res = await fetch(`${url}/${action}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error(`Relay ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -110,10 +129,11 @@ Deno.serve(async (req) => {
     }
 
     // 4. Validate access point if provided
+    let apRouterIp: string | null = null;
     if (ap_id) {
       const { data: ap, error: apError } = await adminClient
         .from('access_points')
-        .select('id, status')
+        .select('id, status, router_ip')
         .eq('id', ap_id)
         .single();
 
@@ -128,6 +148,8 @@ Deno.serve(async (req) => {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+
+      apRouterIp = ap.router_ip || null;
     }
 
     // 5. Compute scheduled end
@@ -160,12 +182,31 @@ Deno.serve(async (req) => {
       throw segmentError;
     }
 
-    // TODO: Call Mikrotik API to authorize the user on the router
-    // This would involve:
-    // 1. Fetching the access point's router_ip, router_user, router_pass
-    // 2. Making an API call to the Mikrotik RouterOS to add a hotspot user
-    // 3. Setting the time limit based on remainingMinutes
-    // For now, we skip this and assume authorization is handled externally
+    // 7. Authorize user on Mikrotik router via VPS relay
+    if (ap_id && apRouterIp) {
+      try {
+        await callMikrotikRelay('hotspot/add-user', {
+          router_ip: apRouterIp,
+          username: mikrotikUserName,
+          time_limit: formatTimeLimit(remainingMinutes),
+          mac_address: mac_address || null,
+        });
+      } catch (relayErr) {
+        // Hard fail: mark segment as failed, return error
+        await adminClient
+          .from('session_segments')
+          .update({ status: 'failed', ended_at: new Date().toISOString() })
+          .eq('id', segment.id);
+
+        return new Response(JSON.stringify({
+          error: 'Failed to authorize on router',
+          detail: relayErr.message,
+          segment_id: segment.id,
+        }), {
+          status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
 
     return new Response(JSON.stringify({
       segment_id: segment.id,
