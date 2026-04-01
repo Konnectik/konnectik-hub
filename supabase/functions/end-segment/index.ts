@@ -7,6 +7,25 @@ const corsHeaders = {
 
 const PLATFORM_FEE_RATE = 0.20; // 20% platform fee
 
+function formatTimeLimit(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = Math.floor(minutes % 60);
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`;
+}
+
+async function callMikrotikRelay(action: string, payload: Record<string, unknown>) {
+  const url = Deno.env.get('MIKROTIK_RELAY_URL');
+  const apiKey = Deno.env.get('MIKROTIK_RELAY_API_KEY');
+  if (!url || !apiKey) throw new Error('Mikrotik relay not configured');
+  const res = await fetch(`${url}/${action}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error(`Relay ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -46,10 +65,10 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // 1. Fetch the active segment
+    // 1. Fetch the active segment (include mikrotik_user_name)
     const { data: segment, error: segError } = await adminClient
       .from('session_segments')
-      .select('id, bundle_id, ap_id, user_id, started_at, scheduled_end, status, time_used_minutes')
+      .select('id, bundle_id, ap_id, user_id, started_at, scheduled_end, status, time_used_minutes, mikrotik_user_name')
       .eq('id', segment_id)
       .eq('user_id', user.id)
       .single();
@@ -84,7 +103,29 @@ Deno.serve(async (req) => {
 
     if (updateError) throw updateError;
 
-    // 4. Check if bundle is exhausted
+    // 4. Revoke user on Mikrotik router via VPS relay (soft fail)
+    if (segment.ap_id && segment.mikrotik_user_name) {
+      try {
+        // Fetch AP router_ip
+        const { data: apData } = await adminClient
+          .from('access_points')
+          .select('router_ip')
+          .eq('id', segment.ap_id)
+          .single();
+
+        if (apData?.router_ip) {
+          await callMikrotikRelay('hotspot/remove-user', {
+            router_ip: apData.router_ip,
+            username: segment.mikrotik_user_name,
+          });
+        }
+      } catch (relayErr) {
+        // Soft fail: log but don't block — router session will timeout naturally
+        console.error(`[end-segment] Relay revoke failed for segment ${segment.id}:`, relayErr.message);
+      }
+    }
+
+    // 5. Check if bundle is exhausted
     const { data: allSegments } = await adminClient
       .from('session_segments')
       .select('time_used_minutes')
@@ -109,7 +150,7 @@ Deno.serve(async (req) => {
         .eq('id', segment.bundle_id);
     }
 
-    // 5. Provider revenue allocation (if AP is linked to a provider)
+    // 6. Provider revenue allocation (if AP is linked to a provider)
     let earningsRecord = null;
     if (segment.ap_id && bundle?.plan_id) {
       // Fetch AP → provider
@@ -176,9 +217,6 @@ Deno.serve(async (req) => {
         }
       }
     }
-
-    // TODO: Call Mikrotik API to revoke the user's hotspot session
-    // This would involve removing the hotspot user from the router
 
     return new Response(JSON.stringify({
       segment_id: segment.id,
