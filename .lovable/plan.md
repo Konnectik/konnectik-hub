@@ -1,62 +1,55 @@
 
 
-## Update start-segment & end-segment with Mikrotik Relay Integration
+## Bulk Notifications Page
 
 ### Summary
-Add `callMikrotikRelay` helper and `formatTimeLimit` utility to both edge functions, replacing the TODO placeholders with actual relay calls. Credentials stay on the VPS — edge functions only send `router_ip`.
+Create an admin-only page at `/dashboard/notifications` where admins can compose notifications, filter target users by zone, wallet balance range, or select all users, preview the recipient count, and send. Notifications are inserted into the existing `notifications` table.
 
-### Changes
+### New Files
 
-**1. `supabase/functions/start-segment/index.ts`**
+**1. `src/pages/BulkNotifications.tsx`**
+- Form with fields: title (required), body (required, textarea), category (select from NotificationCategory enum)
+- Filter section with three modes via radio/toggle:
+  - "All Users" — targets every profile
+  - "By Zone" — multi-select dropdown of wifi_zones, targets users who have session_segments linked to access_points in selected zones
+  - "By Balance Range" — min/max XAF inputs, filters profiles by `wallet_balance_xaf`
+- "Preview Recipients" button that queries Supabase to show count of matching users
+- "Send Notifications" button with confirmation dialog
+- On send: batch-insert rows into `notifications` table (one per recipient user_id)
+- Success/error toast feedback
+- Loading states during send
 
-- Add `formatTimeLimit(minutes)` → `"HH:MM:SS"` helper
-- Add `callMikrotikRelay(action, payload)` helper using `MIKROTIK_RELAY_URL` and `MIKROTIK_RELAY_API_KEY` from `Deno.env`
-- Expand AP select (line ~109) to include `router_ip` alongside `id, status`
-- After segment creation (replacing TODO at lines ~163-168):
-  - If `ap_id` exists, call relay `POST /hotspot/add-user` with `{ router_ip, username: mikrotikUserName, time_limit: formatTimeLimit(remainingMinutes), mac_address }`
-  - On failure: update segment to `status: 'failed'`, return 502 error (hard fail)
+**2. `src/hooks/use-bulk-notifications.ts`**
+- `useNotificationRecipients(filter)` — query hook that returns user IDs + count based on filter criteria:
+  - All: select all profile IDs
+  - By zone: join session_segments → access_points → wifi_zones to get distinct user_ids
+  - By balance: filter profiles on wallet_balance_xaf between min and max
+- `useSendBulkNotifications()` — mutation that accepts `{ userIds, title, body, category }` and batch-inserts into `notifications` table
 
-**2. `supabase/functions/end-segment/index.ts`**
+### Modified Files
 
-- Add same two helpers
-- Expand segment select to also fetch `mikrotik_user_name`
-- After AP select for earnings (reuse `ap` data), extract `router_ip`
-- After segment is marked `ended` (after line ~85):
-  - If `ap_id` exists, call relay `POST /hotspot/remove-user` with `{ router_ip, username: mikrotik_user_name }`
-  - On failure: `console.error` only — soft fail, don't block response
+**3. `src/components/DashboardNav.tsx`**
+- Add nav item: `{ label: "Notifications", path: "/dashboard/notifications", adminOnly: true }`
 
-**3. Supabase secrets (2 new)**
+**4. `src/App.tsx`**
+- Add route: `<Route path="notifications" element={<AdminRoute><BulkNotifications /></AdminRoute>} />`
+- Import BulkNotifications page
 
-- `MIKROTIK_RELAY_URL` — VPS endpoint (e.g. `https://relay.konnectik.cm:8443`)
-- `MIKROTIK_RELAY_API_KEY` — shared API key
+### UI Layout
+- Card-based layout matching existing pages (same pattern as AddBundle/AddZone)
+- Left section: compose form (title, body, category)
+- Right section: filter controls + recipient preview count
+- Bottom: send button with confirmation dialog
 
-### Shared helper code (added to both files)
-
-```typescript
-function formatTimeLimit(minutes: number): string {
-  const h = Math.floor(minutes / 60);
-  const m = Math.floor(minutes % 60);
-  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:00`;
-}
-
-async function callMikrotikRelay(action: string, payload: Record<string, unknown>) {
-  const url = Deno.env.get('MIKROTIK_RELAY_URL');
-  const apiKey = Deno.env.get('MIKROTIK_RELAY_API_KEY');
-  if (!url || !apiKey) throw new Error('Mikrotik relay not configured');
-  const res = await fetch(`${url}/${action}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) throw new Error(`Relay ${res.status}: ${await res.text()}`);
-  return res.json();
-}
+### Data Flow
+```text
+Admin selects filter → Preview shows count
+Admin clicks Send → Confirmation dialog
+Confirmed → Insert N rows into notifications table
+→ Toast success with count sent
 ```
 
-### Failure behavior
-
-| Function | On relay error | Rationale |
-|----------|---------------|-----------|
-| start-segment | Hard fail — mark segment `failed`, return 502 | User must not get "connected" if router didn't authorize |
-| end-segment | Soft fail — log error, continue response | Session is already ended in DB; router session will timeout naturally |
+### Batch Insert Strategy
+- Supabase client supports array inserts: `.insert(rows[])` 
+- For large user bases, chunk into batches of 500 to avoid payload limits
 
