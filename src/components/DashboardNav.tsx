@@ -1,7 +1,8 @@
 import { useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Monitor, LayoutGrid, LogOut, Camera } from "lucide-react";
+import { LogOut, Camera, Settings, ChevronDown } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAvatarUpload } from "@/hooks/use-avatar-upload";
 import KonnectikLogo from "@/assets/logo-white.png";
@@ -90,54 +91,54 @@ const DashboardNav = () => {
           </nav>
         </div>
 
-        <div className="flex items-center gap-4 mb-2">
-          <button className="p-2 rounded-md hover:bg-primary-foreground/10 transition-colors">
-            <LayoutGrid size={18} />
-          </button>
-          <button className="p-2 rounded-md hover:bg-primary-foreground/10 transition-colors">
-            <Monitor size={18} />
-          </button>
-          <button
-            onClick={handleSignOut}
-            className="p-2 rounded-md hover:bg-primary-foreground/10 transition-colors"
-            title="Sign out"
-          >
-            <LogOut size={18} />
-          </button>
-          <div
-            className="flex items-center gap-3 ml-2 cursor-pointer rounded-lg px-2 py-1 hover:bg-primary-foreground/10 transition-colors"
-            onClick={() => navigate("/dashboard/profile")}
-            title="Profile settings"
-          >
-            <div className="text-right text-sm">
-              <div className="font-semibold">{displayName}</div>
-              <div className="text-xs opacity-80">{roleLabel}</div>
-            </div>
-            <div className="relative group">
-              <Avatar className="h-9 w-9 bg-primary-foreground text-foreground cursor-pointer" onClick={() => avatarInputRef.current?.click()}>
-                {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
-                <AvatarFallback className="bg-primary-foreground text-foreground font-bold text-sm">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-              <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer" onClick={() => avatarInputRef.current?.click()}>
-                <Camera size={14} className="text-white" />
-              </div>
-              <input
-                ref={avatarInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    await uploadAvatar(file);
-                    window.location.reload();
-                  }
-                }}
-              />
-            </div>
-          </div>
+        <div className="flex items-center gap-2 mb-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-3 rounded-lg px-2 py-1 hover:bg-primary-foreground/10 transition-colors focus:outline-none">
+                <div className="text-right text-sm">
+                  <div className="font-semibold">{displayName}</div>
+                  <div className="text-xs opacity-80">{roleLabel}</div>
+                </div>
+                <div className="relative group">
+                  <Avatar className="h-9 w-9 bg-primary-foreground text-foreground">
+                    {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
+                    <AvatarFallback className="bg-primary-foreground text-foreground font-bold text-sm">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+                <ChevronDown size={14} className="opacity-70" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => navigate("/dashboard/profile")} className="cursor-pointer">
+                <Settings className="mr-2 h-4 w-4" />
+                Profile Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => avatarInputRef.current?.click()} className="cursor-pointer">
+                <Camera className="mr-2 h-4 w-4" />
+                Change Avatar
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive focus:text-destructive">
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                await uploadAvatar(file);
+                window.location.reload();
+              }
+            }}
+          />
         </div>
       </div>
     </header>
