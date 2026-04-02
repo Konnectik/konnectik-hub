@@ -94,10 +94,10 @@ const Dashboard = () => {
       adminOnly: false,
     },
     {
-      title: "Wi-Fi Zones",
+      title: "Access Points",
       value: zones.length,
       icon: Wifi,
-      subtitle: `${zones.filter((z) => z.status === "Active").length} active`,
+      subtitle: `${zones.filter((z) => z.status === "online").length} online`,
       onClick: () => navigate("/dashboard/k-zones"),
       color: "text-tab-active",
       bgColor: "bg-tab-active-bg",

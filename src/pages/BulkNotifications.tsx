@@ -128,7 +128,7 @@ const BulkNotifications = () => {
                   {zones?.map((z) => (
                     <div key={z.id} className="flex items-center space-x-2">
                       <Checkbox id={`zone-${z.id}`} checked={selectedZones.includes(z.id)} onCheckedChange={() => toggleZone(z.id)} />
-                      <Label htmlFor={`zone-${z.id}`} className="font-normal">{z.name}</Label>
+                      <Label htmlFor={`zone-${z.id}`} className="font-normal">{z.zone_label}</Label>
                     </div>
                   ))}
                   {!zones?.length && <p className="text-sm text-muted-foreground">No zones found.</p>}
