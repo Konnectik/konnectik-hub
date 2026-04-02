@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MapPin, ChevronRight } from "lucide-react";
+import { MapPin, ChevronRight, ArrowLeft, ArrowRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useAddAccessPoint } from "@/hooks/use-access-points";
 import { useProviders } from "@/hooks/use-providers";
@@ -13,6 +13,7 @@ const AddAccessPoint = () => {
   const navigate = useNavigate();
   const addAp = useAddAccessPoint();
   const { data: providers = [] } = useProviders();
+  const [step, setStep] = useState(1);
 
   const [form, setForm] = useState({
     zone_label: "",
@@ -20,7 +21,6 @@ const AddAccessPoint = () => {
     longitude: "",
     propagation_radius_m: "",
     ssid: "",
-    router_ip: "",
     router_type: "",
     speed_profile_name: "",
     provider_id: "",
@@ -40,20 +40,28 @@ const AddAccessPoint = () => {
     return type === "lat" ? num >= -90 && num <= 90 : num >= -180 && num <= 180;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const validateStep1 = () => {
     if (!form.zone_label.trim() || !form.latitude || !form.longitude || !form.propagation_radius_m || !form.provider_id) {
       toast({ title: "Please fill in all required fields", variant: "destructive" });
-      return;
+      return false;
     }
     if (!isValidCoord(form.latitude, "lat")) {
       toast({ title: "Latitude must be between -90 and 90", variant: "destructive" });
-      return;
+      return false;
     }
     if (!isValidCoord(form.longitude, "lng")) {
       toast({ title: "Longitude must be between -180 and 180", variant: "destructive" });
-      return;
+      return false;
     }
+    return true;
+  };
+
+  const handleNext = () => {
+    if (validateStep1()) setStep(2);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     const lat = parseFloat(form.latitude);
     const lng = parseFloat(form.longitude);
     try {
@@ -65,7 +73,6 @@ const AddAccessPoint = () => {
         longitude: lng,
         propagation_radius_m: Number(form.propagation_radius_m),
         ssid: form.ssid.trim() || undefined,
-        router_ip: form.router_ip.trim() || undefined,
         router_type: form.router_type.trim() || undefined,
         speed_profile_name: form.speed_profile_name.trim() || undefined,
       });
@@ -90,110 +97,117 @@ const AddAccessPoint = () => {
 
       <div className="p-6">
         <div className="bg-card rounded-xl border shadow-sm max-w-3xl mx-auto">
-          {/* Section 1: Access Point Information */}
+          {/* Step indicator */}
           <div className="px-8 pt-6">
-            <div className="inline-flex">
-              <span className="text-sm font-semibold text-primary border-b-[3px] border-primary pb-3 px-1">Access Point Information</span>
+            <div className="flex gap-6">
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className={`text-sm font-semibold pb-3 px-1 transition-colors ${step === 1 ? "text-primary border-b-[3px] border-primary" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                1. Access Point Information
+              </button>
+              <button
+                type="button"
+                onClick={() => { if (validateStep1()) setStep(2); }}
+                className={`text-sm font-semibold pb-3 px-1 transition-colors ${step === 2 ? "text-primary border-b-[3px] border-primary" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                2. Router Information
+              </button>
             </div>
             <div className="border-b border-border -mx-8" />
           </div>
 
           <form onSubmit={handleSubmit} className="px-8 py-8">
             <div className="max-w-md mx-auto space-y-5">
-              {/* Zone Label */}
-              <div className="space-y-2">
-                <Label htmlFor="zone_label" className="text-sm font-medium">Zone Label *</Label>
-                <Input id="zone_label" placeholder="e.g. Campus WiFi North" value={form.zone_label} onChange={(e) => setForm({ ...form, zone_label: e.target.value })} maxLength={100} />
-              </div>
-
-              {/* Provider */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Provider *</Label>
-                <Select value={form.provider_id} onValueChange={(val) => setForm({ ...form, provider_id: val })}>
-                  <SelectTrigger><SelectValue placeholder="Select a provider" /></SelectTrigger>
-                  <SelectContent>
-                    {providers.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.business_name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Coordinates */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Location (GIS Coordinates) *</Label>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">Latitude (-90 to 90)</Label>
-                    <Input placeholder="e.g. 3.84803" value={form.latitude} onChange={(e) => setForm({ ...form, latitude: formatCoord(e.target.value) })} inputMode="decimal" />
+              {step === 1 && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="zone_label" className="text-sm font-medium">Zone Label *</Label>
+                    <Input id="zone_label" placeholder="e.g. Campus WiFi North" value={form.zone_label} onChange={(e) => setForm({ ...form, zone_label: e.target.value })} maxLength={100} />
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">Longitude (-180 to 180)</Label>
-                    <Input placeholder="e.g. 11.50210" value={form.longitude} onChange={(e) => setForm({ ...form, longitude: formatCoord(e.target.value) })} inputMode="decimal" />
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Provider *</Label>
+                    <Select value={form.provider_id} onValueChange={(val) => setForm({ ...form, provider_id: val })}>
+                      <SelectTrigger><SelectValue placeholder="Select a provider" /></SelectTrigger>
+                      <SelectContent>
+                        {providers.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>{p.business_name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                </div>
-                {showMap && (
-                  <div className="rounded-lg overflow-hidden border border-border mt-3">
-                    <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 text-xs text-muted-foreground">
-                      <MapPin size={14} className="text-primary" />
-                      <span>{parseFloat(form.latitude).toFixed(5)}, {parseFloat(form.longitude).toFixed(5)}</span>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Location (GIS Coordinates) *</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Latitude (-90 to 90)</Label>
+                        <Input placeholder="e.g. 3.84803" value={form.latitude} onChange={(e) => setForm({ ...form, latitude: formatCoord(e.target.value) })} inputMode="decimal" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Longitude (-180 to 180)</Label>
+                        <Input placeholder="e.g. 11.50210" value={form.longitude} onChange={(e) => setForm({ ...form, longitude: formatCoord(e.target.value) })} inputMode="decimal" />
+                      </div>
                     </div>
-                    <iframe
-                      title="Location Preview"
-                      width="100%"
-                      height="200"
-                      style={{ border: 0 }}
-                      loading="lazy"
-                      src={`https://www.openstreetmap.org/export/embed.html?bbox=${parseFloat(form.longitude) - 0.005},${parseFloat(form.latitude) - 0.003},${parseFloat(form.longitude) + 0.005},${parseFloat(form.latitude) + 0.003}&layer=mapnik&marker=${form.latitude},${form.longitude}`}
-                    />
+                    {showMap && (
+                      <div className="rounded-lg overflow-hidden border border-border mt-3">
+                        <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 text-xs text-muted-foreground">
+                          <MapPin size={14} className="text-primary" />
+                          <span>{parseFloat(form.latitude).toFixed(5)}, {parseFloat(form.longitude).toFixed(5)}</span>
+                        </div>
+                        <iframe title="Location Preview" width="100%" height="200" style={{ border: 0 }} loading="lazy"
+                          src={`https://www.openstreetmap.org/export/embed.html?bbox=${parseFloat(form.longitude) - 0.005},${parseFloat(form.latitude) - 0.003},${parseFloat(form.longitude) + 0.005},${parseFloat(form.latitude) + 0.003}&layer=mapnik&marker=${form.latitude},${form.longitude}`}
+                        />
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              {/* Radius */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Propagation Radius (meters) *</Label>
-                <Input type="number" min={0} placeholder="e.g. 100" value={form.propagation_radius_m} onChange={(e) => setForm({ ...form, propagation_radius_m: e.target.value })} />
-              </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Propagation Radius (meters) *</Label>
+                    <Input type="number" min={0} placeholder="e.g. 100" value={form.propagation_radius_m} onChange={(e) => setForm({ ...form, propagation_radius_m: e.target.value })} />
+                  </div>
 
-              {/* SSID */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">SSID</Label>
-                <Input placeholder="e.g. Konnectik-Free" value={form.ssid} onChange={(e) => setForm({ ...form, ssid: e.target.value })} />
-              </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">SSID</Label>
+                    <Input placeholder="e.g. Konnectik-Free" value={form.ssid} onChange={(e) => setForm({ ...form, ssid: e.target.value })} />
+                  </div>
 
-              {/* Section 2: Router Information */}
-              <div className="pt-4">
-                <div className="-mx-8 border-b border-border" />
-                <div className="pt-4 -mx-8 px-8">
-                  <span className="text-sm font-semibold text-primary border-b-[3px] border-primary pb-3 px-1">Router Information</span>
-                  <div className="border-b border-border -mx-8 mt-3" />
-                </div>
-              </div>
+                  <div className="pt-4">
+                    <Button type="button" onClick={handleNext} className="w-full uppercase font-bold tracking-wide">
+                      Next <ArrowRight size={16} className="ml-2" />
+                    </Button>
+                  </div>
+                </>
+              )}
 
-              {/* Router WireGuard IP */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Router WireGuard IP</Label>
-                <Input placeholder="e.g. 10.0.0.2" value={form.router_ip} onChange={(e) => setForm({ ...form, router_ip: e.target.value })} />
-              </div>
+              {step === 2 && (
+                <>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Router Type</Label>
+                    <Input placeholder="e.g. Mikrotik hAP ac³" value={form.router_type} onChange={(e) => setForm({ ...form, router_type: e.target.value })} />
+                  </div>
 
-              {/* Router Type */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Router Type</Label>
-                <Input placeholder="e.g. Mikrotik hAP ac³" value={form.router_type} onChange={(e) => setForm({ ...form, router_type: e.target.value })} />
-              </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Speed Profile</Label>
+                    <Input placeholder="e.g. 5M/5M" value={form.speed_profile_name} onChange={(e) => setForm({ ...form, speed_profile_name: e.target.value })} />
+                  </div>
 
-              {/* Speed Profile */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Speed Profile</Label>
-                <Input placeholder="e.g. 5M/5M" value={form.speed_profile_name} onChange={(e) => setForm({ ...form, speed_profile_name: e.target.value })} />
-              </div>
+                  <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
+                    The WireGuard IP will be assigned by an administrator after the access point is created and the VPN tunnel is configured.
+                  </p>
 
-              <div className="pt-4">
-                <Button type="submit" className="w-full uppercase font-bold tracking-wide" disabled={addAp.isPending}>
-                  {addAp.isPending ? "Adding..." : "Add Access Point"}
-                </Button>
-              </div>
+                  <div className="flex gap-3 pt-4">
+                    <Button type="button" variant="outline" onClick={() => setStep(1)} className="flex-1 uppercase font-bold tracking-wide">
+                      <ArrowLeft size={16} className="mr-2" /> Back
+                    </Button>
+                    <Button type="submit" className="flex-1 uppercase font-bold tracking-wide" disabled={addAp.isPending}>
+                      {addAp.isPending ? "Adding..." : "Add Access Point"}
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
           </form>
         </div>
