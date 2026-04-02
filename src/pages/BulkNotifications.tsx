@@ -65,7 +65,7 @@ const BulkNotifications = () => {
   const canSend = title.trim() && body.trim() && recipientIds && recipientIds.length > 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <div className="flex items-center gap-3">
         <Bell className="h-6 w-6 text-primary" />
         <h1 className="text-2xl font-bold">Bulk Notifications</h1>
