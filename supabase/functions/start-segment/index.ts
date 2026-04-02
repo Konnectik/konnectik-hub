@@ -200,7 +200,7 @@ Deno.serve(async (req) => {
 
         return new Response(JSON.stringify({
           error: 'Failed to authorize on router',
-          detail: relayErr.message,
+          detail: (relayErr as Error).message,
           segment_id: segment.id,
         }), {
           status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
