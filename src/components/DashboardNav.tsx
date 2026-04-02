@@ -13,6 +13,7 @@ const navItems = [
   { label: "K-Plans", path: "/dashboard/k-plans", adminOnly: true },
   { label: "Transactions", path: "/dashboard/transactions" },
   { label: "Notifications", path: "/dashboard/notifications", adminOnly: true },
+  { label: "AP Health", path: "/dashboard/ap-health", adminOnly: true },
   { label: "Help Center", path: "/dashboard/help" },
 ];
 
