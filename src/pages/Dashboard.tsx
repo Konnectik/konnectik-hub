@@ -44,7 +44,7 @@ const txTypeLabel: Record<string, string> = {
 const Dashboard = () => {
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
-  const { data: zones = [], isLoading: zonesLoading } = useWifiZones();
+  const { data: zones = [], isLoading: zonesLoading } = useAccessPoints();
   const { data: walletTx = [], isLoading: txLoading } = useWalletTransactions();
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
 

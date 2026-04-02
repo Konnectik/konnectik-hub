@@ -31,7 +31,7 @@ const BulkNotifications = () => {
   const [maxBalance, setMaxBalance] = useState('');
   const [previewRequested, setPreviewRequested] = useState(false);
 
-  const { data: zones } = useWifiZones();
+  const { data: zones } = useAccessPoints();
   const filter: NotificationFilter = {
     mode: filterMode,
     zoneIds: selectedZones,
