@@ -1,55 +1,57 @@
 
 
-## Bulk Notifications Page
+## Admin Provider Management + Auto-Create Provider on Signup
 
 ### Summary
-Create an admin-only page at `/dashboard/notifications` where admins can compose notifications, filter target users by zone, wallet balance range, or select all users, preview the recipient count, and send. Notifications are inserted into the existing `notifications` table.
+Two changes: (1) a new "Providers" tab on the K-Owners section of the Users page where admins can create/edit provider profiles linked to owner accounts, and (2) a database trigger that auto-creates a `providers` row + `provider_wallets` row when a user signs up with the `owner` role.
 
-### New Files
+### 1. SQL Migration — Auto-create provider on owner signup
 
-**1. `src/pages/BulkNotifications.tsx`**
-- Form with fields: title (required), body (required, textarea), category (select from NotificationCategory enum)
-- Filter section with three modes via radio/toggle:
-  - "All Users" — targets every profile
-  - "By Zone" — multi-select dropdown of wifi_zones, targets users who have session_segments linked to access_points in selected zones
-  - "By Balance Range" — min/max XAF inputs, filters profiles by `wallet_balance_xaf`
-- "Preview Recipients" button that queries Supabase to show count of matching users
-- "Send Notifications" button with confirmation dialog
-- On send: batch-insert rows into `notifications` table (one per recipient user_id)
-- Success/error toast feedback
-- Loading states during send
+Update the `handle_new_user()` trigger function to also insert into `providers` and `provider_wallets` when `signup_source = 'platform'`:
 
-**2. `src/hooks/use-bulk-notifications.ts`**
-- `useNotificationRecipients(filter)` — query hook that returns user IDs + count based on filter criteria:
-  - All: select all profile IDs
-  - By zone: join session_segments → access_points → wifi_zones to get distinct user_ids
-  - By balance: filter profiles on wallet_balance_xaf between min and max
-- `useSendBulkNotifications()` — mutation that accepts `{ userIds, title, body, category }` and batch-inserts into `notifications` table
+```sql
+-- After the owner role insert:
+INSERT INTO public.providers (user_id, business_name)
+VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data->>'full_name', 'My Business'));
 
-### Modified Files
-
-**3. `src/components/DashboardNav.tsx`**
-- Add nav item: `{ label: "Notifications", path: "/dashboard/notifications", adminOnly: true }`
-
-**4. `src/App.tsx`**
-- Add route: `<Route path="notifications" element={<AdminRoute><BulkNotifications /></AdminRoute>} />`
-- Import BulkNotifications page
-
-### UI Layout
-- Card-based layout matching existing pages (same pattern as AddBundle/AddZone)
-- Left section: compose form (title, body, category)
-- Right section: filter controls + recipient preview count
-- Bottom: send button with confirmation dialog
-
-### Data Flow
-```text
-Admin selects filter → Preview shows count
-Admin clicks Send → Confirmation dialog
-Confirmed → Insert N rows into notifications table
-→ Toast success with count sent
+INSERT INTO public.provider_wallets (provider_id, balance_xaf)
+VALUES (
+  (SELECT id FROM public.providers WHERE user_id = NEW.id),
+  0
+);
 ```
 
-### Batch Insert Strategy
-- Supabase client supports array inserts: `.insert(rows[])` 
-- For large user bases, chunk into batches of 500 to avoid payload limits
+Save as `src/sql/phase7-auto-provider.sql`. User must run in Supabase SQL Editor.
+
+### 2. Admin Provider Management UI
+
+Add a **"Providers"** tab inside the K-Owners tab area on `KUsers.tsx` — or more cleanly, a dedicated management section. Given the existing tab structure, the best approach is:
+
+- **New file: `src/pages/ProviderManagement.tsx`** — admin-only page at `/dashboard/providers`
+- Add nav link in `DashboardNav.tsx` (admin-only, between Users and K-Plans)
+- Add route in `App.tsx`
+
+**Page features:**
+- Table listing all providers with: business_name, linked owner name (join profiles), phone, KYC status, wallet balance, created_at
+- "Create Provider" dialog: select an owner (dropdown of users with `owner` role who don't yet have a provider record), enter business_name, phone
+- Click row → inline edit dialog for business_name, phone, KYC status
+- Delete provider option with confirmation
+
+### 3. New hook: `src/hooks/use-providers.ts`
+
+- `useProviders()` — fetch all providers joined with profiles for admin view
+- `useUnlinkedOwners()` — fetch owner-role users who have no providers row
+- `createProvider(userId, businessName, phone)` — insert into providers + provider_wallets
+- `updateProvider(id, updates)` — update provider details
+- `deleteProvider(id)` — delete provider
+
+### Files to create/edit
+
+| File | Action |
+|------|--------|
+| `src/sql/phase7-auto-provider.sql` | Create — migration to update trigger |
+| `src/hooks/use-providers.ts` | Create — data hooks |
+| `src/pages/ProviderManagement.tsx` | Create — admin page |
+| `src/components/DashboardNav.tsx` | Edit — add "Providers" nav link (admin-only) |
+| `src/App.tsx` | Edit — add route |
 
