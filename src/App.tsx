@@ -30,6 +30,7 @@ import UserDetail from "./pages/UserDetail";
 import BulkNotifications from "./pages/BulkNotifications";
 import ApHealth from "./pages/ApHealth";
 import ProviderDashboard from "./pages/ProviderDashboard";
+import ProviderManagement from "./pages/ProviderManagement";
 
 const queryClient = new QueryClient();
 
