@@ -121,7 +121,7 @@ Deno.serve(async (req) => {
         }
       } catch (relayErr) {
         // Soft fail: log but don't block — router session will timeout naturally
-        console.error(`[end-segment] Relay revoke failed for segment ${segment.id}:`, relayErr.message);
+        console.error(`[end-segment] Relay revoke failed for segment ${segment.id}:`, (relayErr as Error).message);
       }
     }
 
