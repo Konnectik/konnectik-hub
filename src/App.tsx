@@ -27,6 +27,7 @@ import EditRouter from "./pages/EditRouter";
 import EditBundle from "./pages/EditBundle";
 import ProfileSettings from "./pages/ProfileSettings";
 import UserDetail from "./pages/UserDetail";
+import BulkNotifications from "./pages/BulkNotifications";
 
 const queryClient = new QueryClient();
 
