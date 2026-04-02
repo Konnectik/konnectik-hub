@@ -9,7 +9,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Bell, Send, Users } from 'lucide-react';
-import { useWifiZones } from '@/hooks/use-wifi-zones';
+import { useAccessPoints } from '@/hooks/use-access-points';
 import { useNotificationRecipients, useSendBulkNotifications, type FilterMode, type NotificationFilter } from '@/hooks/use-bulk-notifications';
 import type { NotificationCategory } from '@/types/database';
 
