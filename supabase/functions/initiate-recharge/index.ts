@@ -106,9 +106,11 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Calculate fee (2%)
-    const fee = Math.ceil(amount_xaf * 0.02);
-    const net = amount_xaf - fee;
+    // Calculate commission (5% + 2% Netwallet fee)
+    const commission = Math.ceil(amount_xaf * 0.05);
+    const total_to_charge = amount_xaf + commission;
+    const netwallet_fee = Math.ceil(amount_xaf * 0.02);
+    const konnectik_profit = commission - netwallet_fee;
     const orderId = `RCH-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
 
     // --- Netwallet Collection API ---
@@ -129,7 +131,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         CurrencyCode: 'XAF',
         OrderID: orderId,
-        Amount: amount_xaf,
+        Amount: total_to_charge,
         Method: 'MOBILE_MONEY',
         MethodType,
         CountryCode: 'CM',
@@ -161,8 +163,8 @@ Deno.serve(async (req) => {
         user_id: userId,
         type: 'recharge',
         amount_xaf,
-        fee_xaf: fee,
-        net_xaf: net,
+        fee_xaf: commission,
+        net_xaf: konnectik_profit,
         reference: orderId,
         aggregator_ref: aggregatorRef,
         status: 'pending',
@@ -177,8 +179,8 @@ Deno.serve(async (req) => {
       reference: tx.reference,
       aggregator_ref: aggregatorRef,
       amount_xaf,
-      fee_xaf: fee,
-      net_xaf: net,
+      fee_xaf: commission,
+      net_xaf: konnectik_profit,
       message: 'Recharge initiated — awaiting payment confirmation',
     }), {
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
