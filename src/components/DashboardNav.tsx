@@ -13,6 +13,7 @@ const navItems = [
   { label: "K-Zones", path: "/dashboard/k-zones" },
   { label: "K-Plans", path: "/dashboard/k-plans", adminOnly: true },
   { label: "Transactions", path: "/dashboard/transactions" },
+  { label: "My Earnings", path: "/dashboard/provider", ownerOnly: true },
   { label: "Notifications", path: "/dashboard/notifications", adminOnly: true },
   { label: "AP Health", path: "/dashboard/ap-health", adminOnly: true },
   { label: "Help Center", path: "/dashboard/help" },
@@ -55,7 +56,11 @@ const DashboardNav = () => {
 
           <nav className="flex items-end gap-0.5">
             {navItems
-              .filter((item) => !item.adminOnly || role === 'admin')
+              .filter((item) => {
+                if (item.adminOnly && role !== 'admin') return false;
+                if ((item as any).ownerOnly && role !== 'owner' && role !== 'admin') return false;
+                return true;
+              })
               .map((item) => {
               const isActive = item.exact
                 ? location.pathname === item.path

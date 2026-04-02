@@ -29,6 +29,7 @@ import ProfileSettings from "./pages/ProfileSettings";
 import UserDetail from "./pages/UserDetail";
 import BulkNotifications from "./pages/BulkNotifications";
 import ApHealth from "./pages/ApHealth";
+import ProviderDashboard from "./pages/ProviderDashboard";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +68,7 @@ const App = () => (
               <Route path="notifications" element={<AdminRoute><BulkNotifications /></AdminRoute>} />
               <Route path="ap-health" element={<AdminRoute><ApHealth /></AdminRoute>} />
               <Route path="mybalance" element={<MyBalance />} />
+              <Route path="provider" element={<ProviderDashboard />} />
               <Route path="help" element={<PlaceholderPage />} />
               <Route path="profile" element={<ProfileSettings />} />
             </Route>
