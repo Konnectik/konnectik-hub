@@ -143,10 +143,10 @@ const ProviderManagement = () => {
                     <TableCell>{format(new Date(p.created_at), "dd MMM yyyy")}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(p)}>
+                        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); openEdit(p); }}>
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(p)}>
+                        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setDeleteTarget(p); }}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
