@@ -12,6 +12,7 @@ const navItems = [
   { label: "K-Zones", path: "/dashboard/k-zones" },
   { label: "K-Plans", path: "/dashboard/k-plans", adminOnly: true },
   { label: "Transactions", path: "/dashboard/transactions" },
+  { label: "Notifications", path: "/dashboard/notifications", adminOnly: true },
   { label: "Help Center", path: "/dashboard/help" },
 ];
 
