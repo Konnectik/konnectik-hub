@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
-import { useWifiZones } from "@/hooks/use-wifi-zones";
+import { useAccessPoints } from "@/hooks/use-access-points";
 import { useWalletTransactions } from "@/hooks/use-wallet-transactions";
 import { useDashboardStats } from "@/hooks/use-dashboard-stats";
 import { Skeleton } from "@/components/ui/skeleton";
