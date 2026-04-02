@@ -28,6 +28,7 @@ import EditBundle from "./pages/EditBundle";
 import ProfileSettings from "./pages/ProfileSettings";
 import UserDetail from "./pages/UserDetail";
 import BulkNotifications from "./pages/BulkNotifications";
+import ApHealth from "./pages/ApHealth";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +65,7 @@ const App = () => (
               <Route path="k-plans/:id" element={<AdminRoute><EditBundle /></AdminRoute>} />
               <Route path="transactions" element={<Transx />} />
               <Route path="notifications" element={<AdminRoute><BulkNotifications /></AdminRoute>} />
+              <Route path="ap-health" element={<AdminRoute><ApHealth /></AdminRoute>} />
               <Route path="mybalance" element={<MyBalance />} />
               <Route path="help" element={<PlaceholderPage />} />
               <Route path="profile" element={<ProfileSettings />} />
