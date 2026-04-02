@@ -9,7 +9,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Bell, Send, Users } from 'lucide-react';
-import { useWifiZones } from '@/hooks/use-wifi-zones';
+import { useAccessPoints } from '@/hooks/use-access-points';
 import { useNotificationRecipients, useSendBulkNotifications, type FilterMode, type NotificationFilter } from '@/hooks/use-bulk-notifications';
 import type { NotificationCategory } from '@/types/database';
 
@@ -31,7 +31,7 @@ const BulkNotifications = () => {
   const [maxBalance, setMaxBalance] = useState('');
   const [previewRequested, setPreviewRequested] = useState(false);
 
-  const { data: zones } = useWifiZones();
+  const { data: zones } = useAccessPoints();
   const filter: NotificationFilter = {
     mode: filterMode,
     zoneIds: selectedZones,
@@ -128,7 +128,7 @@ const BulkNotifications = () => {
                   {zones?.map((z) => (
                     <div key={z.id} className="flex items-center space-x-2">
                       <Checkbox id={`zone-${z.id}`} checked={selectedZones.includes(z.id)} onCheckedChange={() => toggleZone(z.id)} />
-                      <Label htmlFor={`zone-${z.id}`} className="font-normal">{z.name}</Label>
+                      <Label htmlFor={`zone-${z.id}`} className="font-normal">{z.zone_label}</Label>
                     </div>
                   ))}
                   {!zones?.length && <p className="text-sm text-muted-foreground">No zones found.</p>}

@@ -16,14 +16,12 @@ import KPlans from "./pages/KPlans";
 import KUsers from "./pages/KUsers";
 import Transx from "./pages/Transactions";
 import AddUser from "./pages/AddUser";
-import AddRouter from "./pages/AddRouter";
-import AddZone from "./pages/AddZone";
+import AddAccessPoint from "./pages/AddAccessPoint";
 import AddBundle from "./pages/AddBundle";
 import MyBalance from "./pages/MyBalance";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
-import EditZone from "./pages/EditZone";
-import EditRouter from "./pages/EditRouter";
+import EditAccessPoint from "./pages/EditAccessPoint";
 import EditBundle from "./pages/EditBundle";
 import ProfileSettings from "./pages/ProfileSettings";
 import UserDetail from "./pages/UserDetail";
@@ -56,10 +54,8 @@ const App = () => (
             >
               <Route index element={<Dashboard />} />
               <Route path="k-zones" element={<KZones />} />
-              <Route path="k-zones/add-zone" element={<AddZone />} />
-              <Route path="k-zones/add-router" element={<AddRouter />} />
-              <Route path="k-zones/zone/:id" element={<EditZone />} />
-              <Route path="k-zones/router/:id" element={<EditRouter />} />
+              <Route path="k-zones/add" element={<AddAccessPoint />} />
+              <Route path="k-zones/:id" element={<EditAccessPoint />} />
               <Route path="users" element={<AdminRoute><KUsers /></AdminRoute>} />
               <Route path="users/add" element={<AdminRoute><AddUser /></AdminRoute>} />
               <Route path="users/:id" element={<AdminRoute><UserDetail /></AdminRoute>} />

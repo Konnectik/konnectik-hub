@@ -25,7 +25,7 @@ async function fetchRecipientIds(filter: NotificationFilter): Promise<string[]> 
     const { data: aps, error: apErr } = await supabase
       .from('access_points')
       .select('id')
-      .in('zone_id', filter.zoneIds);
+      .in('id', filter.zoneIds);
     if (apErr) throw apErr;
     if (!aps?.length) return [];
 

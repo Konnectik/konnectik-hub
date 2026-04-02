@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
-import { useWifiZones } from "@/hooks/use-wifi-zones";
+import { useAccessPoints } from "@/hooks/use-access-points";
 import { useWalletTransactions } from "@/hooks/use-wallet-transactions";
 import { useDashboardStats } from "@/hooks/use-dashboard-stats";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -44,7 +44,7 @@ const txTypeLabel: Record<string, string> = {
 const Dashboard = () => {
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
-  const { data: zones = [], isLoading: zonesLoading } = useWifiZones();
+  const { data: zones = [], isLoading: zonesLoading } = useAccessPoints();
   const { data: walletTx = [], isLoading: txLoading } = useWalletTransactions();
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
 
@@ -94,10 +94,10 @@ const Dashboard = () => {
       adminOnly: false,
     },
     {
-      title: "Wi-Fi Zones",
+      title: "Access Points",
       value: zones.length,
       icon: Wifi,
-      subtitle: `${zones.filter((z) => z.status === "Active").length} active`,
+      subtitle: `${zones.filter((z) => z.status === "online").length} online`,
       onClick: () => navigate("/dashboard/k-zones"),
       color: "text-tab-active",
       bgColor: "bg-tab-active-bg",
