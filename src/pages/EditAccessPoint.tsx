@@ -120,10 +120,14 @@ const EditAccessPoint = () => {
         <ArrowLeft size={16} className="mr-2" /> Back to Access Points
       </Button>
 
-      <div className="bg-card rounded-xl border p-6 shadow-sm space-y-6">
-        <h2 className="text-xl font-bold">Edit Access Point</h2>
+      <div className="bg-card rounded-xl border shadow-sm">
+        {/* Section 1: Access Point Information */}
+        <div className="px-6 pt-6">
+          <span className="text-sm font-semibold text-primary border-b-[3px] border-primary pb-3 px-1">Access Point Information</span>
+          <div className="border-b border-border -mx-6 mt-0" />
+        </div>
 
-        <div className="space-y-4">
+        <div className="px-6 py-6 space-y-4">
           <div className="space-y-2">
             <Label>Zone Label</Label>
             <Input value={form.zone_label} onChange={(e) => setForm({ ...form, zone_label: e.target.value })} />
@@ -193,7 +197,15 @@ const EditAccessPoint = () => {
             <Label>SSID</Label>
             <Input value={form.ssid} onChange={(e) => setForm({ ...form, ssid: e.target.value })} placeholder="e.g. Konnectik-Free" />
           </div>
+        </div>
 
+        {/* Section 2: Router Information */}
+        <div className="px-6">
+          <span className="text-sm font-semibold text-primary border-b-[3px] border-primary pb-3 px-1">Router Information</span>
+          <div className="border-b border-border -mx-6 mt-0" />
+        </div>
+
+        <div className="px-6 py-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Router WireGuard IP</Label>
@@ -211,7 +223,8 @@ const EditAccessPoint = () => {
           </div>
         </div>
 
-        <div className="flex justify-between pt-4">
+        {/* Actions */}
+        <div className="px-6 pb-6 flex justify-between pt-2">
           <Button variant="destructive" onClick={() => setConfirmOpen(true)}>
             <Trash2 size={16} className="mr-2" /> Delete
           </Button>
