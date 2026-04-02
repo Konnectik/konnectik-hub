@@ -27,6 +27,7 @@ const ProviderManagement = () => {
   const updateProvider = useUpdateProvider();
   const deleteProvider = useDeleteProvider();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editProvider, setEditProvider] = useState<ProviderRow | null>(null);
