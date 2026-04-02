@@ -129,7 +129,7 @@ const ProviderManagement = () => {
               </TableHeader>
               <TableBody>
                 {providers.map((p) => (
-                  <TableRow key={p.id}>
+                  <TableRow key={p.id} className="cursor-pointer" onClick={() => navigate(`/dashboard/providers/${p.id}`)}>
                     <TableCell className="font-medium">{p.business_name}</TableCell>
                     <TableCell>
                       <div>{p.profile_name || "—"}</div>
