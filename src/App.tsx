@@ -31,6 +31,7 @@ import BulkNotifications from "./pages/BulkNotifications";
 import ApHealth from "./pages/ApHealth";
 import ProviderDashboard from "./pages/ProviderDashboard";
 import ProviderManagement from "./pages/ProviderManagement";
+import ProviderDetail from "./pages/ProviderDetail";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +67,7 @@ const App = () => (
               <Route path="k-plans/add" element={<AdminRoute><AddBundle /></AdminRoute>} />
               <Route path="k-plans/:id" element={<AdminRoute><EditBundle /></AdminRoute>} />
               <Route path="providers" element={<AdminRoute><ProviderManagement /></AdminRoute>} />
+              <Route path="providers/:id" element={<AdminRoute><ProviderDetail /></AdminRoute>} />
               <Route path="transactions" element={<Transx />} />
               <Route path="notifications" element={<AdminRoute><BulkNotifications /></AdminRoute>} />
               <Route path="ap-health" element={<AdminRoute><ApHealth /></AdminRoute>} />

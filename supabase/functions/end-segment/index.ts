@@ -121,7 +121,7 @@ Deno.serve(async (req) => {
         }
       } catch (relayErr) {
         // Soft fail: log but don't block — router session will timeout naturally
-        console.error(`[end-segment] Relay revoke failed for segment ${segment.id}:`, relayErr.message);
+        console.error(`[end-segment] Relay revoke failed for segment ${segment.id}:`, (relayErr as Error).message);
       }
     }
 
@@ -230,7 +230,7 @@ Deno.serve(async (req) => {
     });
 
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

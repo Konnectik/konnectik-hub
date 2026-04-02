@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useProviders, useUnlinkedOwners, useCreateProvider, useUpdateProvider, useDeleteProvider, ProviderRow } from "@/hooks/use-providers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -26,6 +27,7 @@ const ProviderManagement = () => {
   const updateProvider = useUpdateProvider();
   const deleteProvider = useDeleteProvider();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editProvider, setEditProvider] = useState<ProviderRow | null>(null);
@@ -127,7 +129,7 @@ const ProviderManagement = () => {
               </TableHeader>
               <TableBody>
                 {providers.map((p) => (
-                  <TableRow key={p.id}>
+                  <TableRow key={p.id} className="cursor-pointer" onClick={() => navigate(`/dashboard/providers/${p.id}`)}>
                     <TableCell className="font-medium">{p.business_name}</TableCell>
                     <TableCell>
                       <div>{p.profile_name || "—"}</div>
@@ -141,10 +143,10 @@ const ProviderManagement = () => {
                     <TableCell>{format(new Date(p.created_at), "dd MMM yyyy")}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(p)}>
+                        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); openEdit(p); }}>
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(p)}>
+                        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setDeleteTarget(p); }}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
