@@ -68,6 +68,7 @@ const App = () => (
               <Route path="notifications" element={<AdminRoute><BulkNotifications /></AdminRoute>} />
               <Route path="ap-health" element={<AdminRoute><ApHealth /></AdminRoute>} />
               <Route path="mybalance" element={<MyBalance />} />
+              <Route path="provider" element={<ProviderDashboard />} />
               <Route path="help" element={<PlaceholderPage />} />
               <Route path="profile" element={<ProfileSettings />} />
             </Route>
