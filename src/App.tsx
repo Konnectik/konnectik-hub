@@ -67,6 +67,7 @@ const App = () => (
               <Route path="k-plans/add" element={<AdminRoute><AddBundle /></AdminRoute>} />
               <Route path="k-plans/:id" element={<AdminRoute><EditBundle /></AdminRoute>} />
               <Route path="providers" element={<AdminRoute><ProviderManagement /></AdminRoute>} />
+              <Route path="providers/:id" element={<AdminRoute><ProviderDetail /></AdminRoute>} />
               <Route path="transactions" element={<Transx />} />
               <Route path="notifications" element={<AdminRoute><BulkNotifications /></AdminRoute>} />
               <Route path="ap-health" element={<AdminRoute><ApHealth /></AdminRoute>} />
