@@ -56,7 +56,11 @@ const DashboardNav = () => {
 
           <nav className="flex items-end gap-0.5">
             {navItems
-              .filter((item) => !item.adminOnly || role === 'admin')
+              .filter((item) => {
+                if (item.adminOnly && role !== 'admin') return false;
+                if ((item as any).ownerOnly && role !== 'owner' && role !== 'admin') return false;
+                return true;
+              })
               .map((item) => {
               const isActive = item.exact
                 ? location.pathname === item.path
