@@ -90,6 +90,7 @@ const AddAccessPoint = () => {
 
       <div className="p-6">
         <div className="bg-card rounded-xl border shadow-sm max-w-3xl mx-auto">
+          {/* Section 1: Access Point Information */}
           <div className="px-8 pt-6">
             <div className="inline-flex">
               <span className="text-sm font-semibold text-primary border-b-[3px] border-primary pb-3 px-1">Access Point Information</span>
@@ -161,7 +162,16 @@ const AddAccessPoint = () => {
                 <Input placeholder="e.g. Konnectik-Free" value={form.ssid} onChange={(e) => setForm({ ...form, ssid: e.target.value })} />
               </div>
 
-              {/* Router IP */}
+              {/* Section 2: Router Information */}
+              <div className="pt-4">
+                <div className="-mx-8 border-b border-border" />
+                <div className="pt-4 -mx-8 px-8">
+                  <span className="text-sm font-semibold text-primary border-b-[3px] border-primary pb-3 px-1">Router Information</span>
+                  <div className="border-b border-border -mx-8 mt-3" />
+                </div>
+              </div>
+
+              {/* Router WireGuard IP */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Router WireGuard IP</Label>
                 <Input placeholder="e.g. 10.0.0.2" value={form.router_ip} onChange={(e) => setForm({ ...form, router_ip: e.target.value })} />
