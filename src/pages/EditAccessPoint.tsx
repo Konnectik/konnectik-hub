@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowRight, Save, Trash2, MapPin } from "lucide-react";
 import { useAccessPoints, useUpdateAccessPoint, useDeleteAccessPoint } from "@/hooks/use-access-points";
 import { useProviders } from "@/hooks/use-providers";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
@@ -22,6 +23,7 @@ const EditAccessPoint = () => {
   const deleteAp = useDeleteAccessPoint();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [step, setStep] = useState(1);
+  const provisionedRef = useRef(false);
 
   const ap = accessPoints.find((a) => a.id === id);
 
@@ -31,11 +33,14 @@ const EditAccessPoint = () => {
     longitude: "",
     propagation_radius_m: 0,
     ssid: "",
-    router_ip: "",
     router_type: "",
     speed_profile_name: "",
     provider_id: "",
     status: "offline" as string,
+    tunnel_status: "pending" as "pending" | "connected" | "disconnected",
+    tunnel_ip: "",
+    wg_public_key: "",
+    generated_command: "",
   });
 
   useEffect(() => {
@@ -46,14 +51,85 @@ const EditAccessPoint = () => {
         longitude: ap.longitude?.toString() || "",
         propagation_radius_m: ap.propagation_radius_m,
         ssid: ap.ssid || "",
-        router_ip: ap.router_ip || "",
         router_type: ap.router_type || "",
         speed_profile_name: ap.speed_profile_name || "",
         provider_id: ap.provider_id,
         status: ap.status,
+        tunnel_status: (ap.tunnel_status as any) || "pending",
+        tunnel_ip: ap.tunnel_ip || "",
+        wg_public_key: ap.wg_public_key || "",
+        generated_command: "",
       });
     }
   }, [ap]);
+
+  // Auto-provision tunnel when entering Step 2 for the first time
+  useEffect(() => {
+    if (step !== 2 || !id) return;
+    if (form.tunnel_ip || provisionedRef.current) return;
+    provisionedRef.current = true;
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("provision-router", {
+          body: { ap_id: id },
+        });
+        if (error) throw error;
+        if (data?.command) {
+          setForm((f) => ({
+            ...f,
+            generated_command: data.command,
+            tunnel_ip: data.tunnel_ip || f.tunnel_ip,
+          }));
+        }
+      } catch (e: any) {
+        provisionedRef.current = false;
+        toast({ title: "Failed to generate router commands", description: e?.message, variant: "destructive" });
+      }
+    })();
+  }, [step, id, form.tunnel_ip, toast]);
+
+  // If already provisioned, fetch the command lazily when entering Step 2
+  useEffect(() => {
+    if (step !== 2 || !id) return;
+    if (!form.tunnel_ip || form.generated_command) return;
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("provision-router", {
+          body: { ap_id: id },
+        });
+        if (error) throw error;
+        if (data?.command) {
+          setForm((f) => ({ ...f, generated_command: data.command }));
+        }
+      } catch {
+        /* silent */
+      }
+    })();
+  }, [step, id, form.tunnel_ip, form.generated_command]);
+
+  // Realtime: watch tunnel_status until connected
+  useEffect(() => {
+    if (step !== 2 || !id) return;
+    if (form.tunnel_status === "connected") return;
+    const channel = supabase
+      .channel(`ap-tunnel-${id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "access_points", filter: `id=eq.${id}` },
+        (payload) => {
+          const row = payload.new as any;
+          setForm((f) => ({
+            ...f,
+            tunnel_status: row.tunnel_status || f.tunnel_status,
+            tunnel_ip: row.tunnel_ip || f.tunnel_ip,
+          }));
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [step, id, form.tunnel_status]);
 
   const formatCoord = (value: string) => {
     const cleaned = value.replace(/[^0-9.\-]/g, "");
@@ -99,7 +175,7 @@ const EditAccessPoint = () => {
           longitude: lng,
           propagation_radius_m: form.propagation_radius_m,
           ssid: form.ssid || null,
-          router_ip: form.router_ip || null,
+          router_ip: form.tunnel_ip || null,
           router_type: form.router_type || null,
           speed_profile_name: form.speed_profile_name || null,
           provider_id: form.provider_id,
@@ -234,34 +310,115 @@ const EditAccessPoint = () => {
           )}
 
           {step === 2 && (
-            <div className="space-y-4 max-w-md mx-auto">
+            <div className="space-y-5 max-w-md mx-auto">
+              {/* Generated command block */}
               <div className="space-y-2">
-                <Label>Router WireGuard IP</Label>
-                <Input value={form.router_ip} onChange={(e) => setForm({ ...form, router_ip: e.target.value })} placeholder="e.g. 10.0.0.2" />
-                <p className="text-xs text-muted-foreground">Assigned by an administrator after VPN tunnel configuration.</p>
+                <Label>Paste this into your Mikrotik terminal</Label>
+                <p className="text-xs text-muted-foreground">
+                  Open Winbox → click your router → New Terminal, then paste the commands below.
+                </p>
+                <div className="bg-muted rounded-lg p-4 font-mono text-xs whitespace-pre-wrap border border-border leading-relaxed">
+                  {form.generated_command || "Generating command..."}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (form.generated_command) {
+                      navigator.clipboard.writeText(form.generated_command);
+                      toast({ title: "Commands copied to clipboard" });
+                    }
+                  }}
+                >
+                  Copy all commands
+                </Button>
               </div>
 
-              <div className="space-y-2">
-                <Label>Router Type</Label>
-                <Input value={form.router_type} onChange={(e) => setForm({ ...form, router_type: e.target.value })} placeholder="e.g. Mikrotik hAP ac³" />
+              {/* Tunnel status indicator */}
+              <div className="flex items-center gap-3 p-3 rounded-lg border border-border">
+                <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
+                  form.tunnel_status === "connected"
+                    ? "bg-green-500"
+                    : form.tunnel_status === "disconnected"
+                    ? "bg-red-500"
+                    : "bg-amber-400 animate-pulse"
+                }`} />
+                <div>
+                  <p className="text-sm font-medium">
+                    {form.tunnel_status === "connected"
+                      ? "Router connected successfully"
+                      : form.tunnel_status === "disconnected"
+                      ? "Connection lost — re-paste the commands"
+                      : "Waiting for router connection..."}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {form.tunnel_status === "pending"
+                      ? "This updates automatically. No need to refresh."
+                      : form.tunnel_status === "connected"
+                      ? `Tunnel IP: ${form.tunnel_ip}`
+                      : ""}
+                  </p>
+                </div>
               </div>
 
+              {/* Optional router model field */}
               <div className="space-y-2">
-                <Label>Speed Profile</Label>
-                <Input value={form.speed_profile_name} onChange={(e) => setForm({ ...form, speed_profile_name: e.target.value })} placeholder="e.g. 5M/5M" />
+                <Label>
+                  Router Model <span className="text-muted-foreground ml-1">(optional)</span>
+                </Label>
+                <Input
+                  value={form.router_type}
+                  onChange={(e) => setForm({ ...form, router_type: e.target.value })}
+                  placeholder="e.g. Mikrotik hAP ac³"
+                />
               </div>
 
-              <div className="flex gap-3 pt-4">
-                <Button type="button" variant="outline" onClick={() => setStep(1)} className="flex-1 uppercase font-bold tracking-wide">
+              {/* Bandwidth profile */}
+              <div className="space-y-2">
+                <Label>Bandwidth Profile</Label>
+                <Select
+                  value={form.speed_profile_name}
+                  onValueChange={(val) => setForm({ ...form, speed_profile_name: val })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select bandwidth" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5M/5M">5 Mbps / 5 Mbps</SelectItem>
+                    <SelectItem value="10M/10M">10 Mbps / 10 Mbps</SelectItem>
+                    <SelectItem value="20M/20M">20 Mbps / 20 Mbps</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Navigation buttons */}
+              <div className="flex gap-3 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setStep(1)}
+                  className="flex-1 uppercase font-bold tracking-wide"
+                >
                   <ArrowLeft size={16} className="mr-2" /> Back
                 </Button>
-                <Button onClick={handleSave} disabled={updateAp.isPending} className="flex-1 uppercase font-bold tracking-wide">
-                  <Save size={16} className="mr-2" /> Save Changes
+                <Button
+                  onClick={handleSave}
+                  disabled={updateAp.isPending}
+                  className="flex-1 uppercase font-bold tracking-wide"
+                >
+                  <Save size={16} className="mr-2" />
+                  {form.tunnel_status === "connected" ? "Save & Go Live" : "Save (connect router later)"}
                 </Button>
               </div>
 
-              <div className="pt-2">
-                <Button variant="destructive" onClick={() => setConfirmOpen(true)} className="w-full">
+              {/* Delete button */}
+              <div className="pt-1">
+                <Button
+                  variant="destructive"
+                  onClick={() => setConfirmOpen(true)}
+                  className="w-full"
+                >
                   <Trash2 size={16} className="mr-2" /> Delete Access Point
                 </Button>
               </div>
