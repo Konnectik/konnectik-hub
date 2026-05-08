@@ -123,6 +123,11 @@ export interface AccessPoint {
   speed_profile_name: string | null;
   status: ApStatus;
   avg_rating: number;
+  wg_public_key?: string | null;
+  wg_private_key_encrypted?: string | null;
+  tunnel_ip?: string | null;
+  tunnel_status?: 'pending' | 'connected' | 'disconnected';
+  tunnel_last_seen?: string | null;
   created_at: string;
   updated_at: string;
   // joined
