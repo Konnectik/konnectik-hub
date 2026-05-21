@@ -25,6 +25,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+<<<<<<< HEAD
 
 # Secrets / env
 .env
@@ -47,3 +48,5 @@ supabase/.branches/
 bun.lockb
 bun.lock
 pnpm-lock.yaml
+=======
+>>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25

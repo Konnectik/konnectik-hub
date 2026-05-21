@@ -12,10 +12,13 @@ const json = (status: number, body: unknown) =>
   });
 
 function buildCommand(privateKey: string, vpsPublicKey: string, assignedIp: string) {
+<<<<<<< HEAD
   const RELAY_HOST = Deno.env.get('MIKROTIK_RELAY_WG_ENDPOINT') || 'konnectik.cloud';
   const VPN_SUBNET = '10.99.0.0/24';
   const VPN_SERVER_IP = '10.99.0.1/32';
 
+=======
+>>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
   return `/interface wireguard add \\
   name="konnectik-vpn" \\
   private-key="${privateKey}"
@@ -23,9 +26,15 @@ function buildCommand(privateKey: string, vpsPublicKey: string, assignedIp: stri
 /interface wireguard peers add \\
   interface="konnectik-vpn" \\
   public-key="${vpsPublicKey}" \\
+<<<<<<< HEAD
   endpoint-address="${RELAY_HOST}" \\
   endpoint-port=51820 \\
   allowed-address=${VPN_SERVER_IP} \\
+=======
+  endpoint-address="relay.konnectik.cm" \\
+  endpoint-port=51820 \\
+  allowed-address=10.0.0.1/32 \\
+>>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
   persistent-keepalive=25s
 
 /ip address add \\
@@ -34,12 +43,16 @@ function buildCommand(privateKey: string, vpsPublicKey: string, assignedIp: stri
 
 /ip service set www \\
   disabled=no port=80 \\
+<<<<<<< HEAD
   address=${VPN_SUBNET}
 
 /ip firewall filter add \\
   chain=input src-address=${VPN_SUBNET} \\
   action=accept place-before=0 \\
   comment="Allow Konnectik relay"`;
+=======
+  address=10.0.0.0/24`;
+>>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
 }
 
 async function callRelay(path: string, payload: Record<string, unknown>) {
@@ -56,9 +69,14 @@ async function callRelay(path: string, payload: Record<string, unknown>) {
 }
 
 function nextAvailableIp(taken: Set<string>): string | null {
+<<<<<<< HEAD
   // Subnet 10.99.0.0/24 — .1 is the VPS server itself
   for (let i = 2; i <= 254; i++) {
     const ip = `10.99.0.${i}`;
+=======
+  for (let i = 2; i <= 254; i++) {
+    const ip = `10.0.0.${i}`;
+>>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
     if (!taken.has(ip)) return ip;
   }
   return null;

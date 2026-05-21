@@ -17,6 +17,7 @@ async function verifyCallbackToken(token: string, orderId: string): Promise<bool
   return token === expected;
 }
 
+<<<<<<< HEAD
 // Map Netwallet status to our internal status.
 // PENDING = intermediate state (the user hasn't accepted the prompt on their phone yet);
 // keep the tx as pending so a later SUCCESS/FAILED callback can still settle it.
@@ -24,6 +25,12 @@ function mapStatus(nwStatus: string): 'confirmed' | 'failed' | 'pending' {
   switch (nwStatus.toUpperCase()) {
     case 'SUCCESS': return 'confirmed';
     case 'PENDING': return 'pending';
+=======
+// Map Netwallet status to our internal status
+function mapStatus(nwStatus: string): 'confirmed' | 'failed' {
+  switch (nwStatus.toUpperCase()) {
+    case 'SUCCESS': return 'confirmed';
+>>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
     case 'FAILED':
     case 'CANCELLED':
     case 'TIMEOUT':
@@ -84,6 +91,7 @@ Deno.serve(async (req) => {
 
     const internalStatus = mapStatus(Status);
 
+<<<<<<< HEAD
     if (internalStatus === 'pending') {
       // Intermediate callback — leave tx as pending and just acknowledge.
       return new Response(JSON.stringify({ received: true }), {
@@ -92,11 +100,19 @@ Deno.serve(async (req) => {
     }
 
     if (internalStatus === 'confirmed') {
+=======
+    if (internalStatus === 'confirmed') {
+      // Update transaction to confirmed
+>>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
       await adminClient
         .from('wallet_transactions')
         .update({ status: 'confirmed' })
         .eq('id', tx.id);
 
+<<<<<<< HEAD
+=======
+      // Credit the user's wallet
+>>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
       const { data: profile } = await adminClient
         .from('profiles')
         .select('wallet_balance_xaf')
@@ -109,11 +125,27 @@ Deno.serve(async (req) => {
         .update({ wallet_balance_xaf: currentBalance + tx.net_xaf })
         .eq('id', tx.user_id);
 
+<<<<<<< HEAD
+=======
+      // Acknowledge to Netwallet
+      return new Response(JSON.stringify({ received: true }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+
+    } else {
+      // Mark as failed
+      await adminClient
+        .from('wallet_transactions')
+        .update({ status: 'failed' })
+        .eq('id', tx.id);
+
+>>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
       return new Response(JSON.stringify({ received: true }), {
         status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+<<<<<<< HEAD
     // failed | cancelled | timeout
     await adminClient
       .from('wallet_transactions')
@@ -124,6 +156,8 @@ Deno.serve(async (req) => {
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
+=======
+>>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
   } catch (err) {
     return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },

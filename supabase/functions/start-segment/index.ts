@@ -195,7 +195,11 @@ Deno.serve(async (req) => {
         // Hard fail: mark segment as failed, return error
         await adminClient
           .from('session_segments')
+<<<<<<< HEAD
           .update({ status: 'error', ended_at: new Date().toISOString() })
+=======
+          .update({ status: 'failed', ended_at: new Date().toISOString() })
+>>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
           .eq('id', segment.id);
 
         return new Response(JSON.stringify({

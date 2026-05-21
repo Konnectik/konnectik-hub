@@ -85,7 +85,11 @@ Deno.serve(async (req) => {
       });
     }
 
+<<<<<<< HEAD
     const price = plan.price ?? 0;
+=======
+    const price = plan.price_xaf ?? 0;
+>>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
 
     if ((profile.wallet_balance_xaf ?? 0) < price) {
       return new Response(JSON.stringify({ error: 'Insufficient wallet balance' }), {
@@ -93,6 +97,7 @@ Deno.serve(async (req) => {
       });
     }
 
+<<<<<<< HEAD
     // Convert plan duration (duration + duration_unit) → minutes + expiry
     function planTotalMinutes(p: { duration: number; duration_unit: string | null }): number {
       const unit = (p.duration_unit || 'minutes').toLowerCase();
@@ -117,6 +122,8 @@ Deno.serve(async (req) => {
     // Bundles expire 30 days after purchase by default (configurable later).
     const DEFAULT_BUNDLE_TTL_DAYS = 30;
 
+=======
+>>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
     // Debit wallet
     const newBalance = (profile.wallet_balance_xaf ?? 0) - price;
     await adminClient
@@ -125,7 +132,11 @@ Deno.serve(async (req) => {
       .eq('id', user.id);
 
     // Create wallet transaction (debit)
+<<<<<<< HEAD
     const reference = `BUY${Date.now()}${crypto.randomUUID().slice(0, 8).replace(/-/g, '')}`;
+=======
+    const reference = `BUY-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
+>>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
     await adminClient.from('wallet_transactions').insert({
       user_id: user.id,
       type: 'debit',
@@ -136,8 +147,15 @@ Deno.serve(async (req) => {
       status: 'confirmed',
     });
 
+<<<<<<< HEAD
     // Calculate expiry — 30 days from purchase by default
     const expiresAt = new Date(Date.now() + DEFAULT_BUNDLE_TTL_DAYS * 86400000).toISOString();
+=======
+    // Calculate expiry based on plan duration
+    const expiresAt = plan.duration_days
+      ? new Date(Date.now() + plan.duration_days * 86400000).toISOString()
+      : null;
+>>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
 
     // Create user bundle
     const { data: bundle, error: bundleError } = await adminClient
@@ -146,7 +164,11 @@ Deno.serve(async (req) => {
         user_id: user.id,
         plan_id,
         session_type: plan.session_type ?? 'paid',
+<<<<<<< HEAD
         total_minutes: totalMinutes,
+=======
+        total_minutes: plan.duration_minutes ?? 0,
+>>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
         status: 'active',
         expires_at: expiresAt,
         idempotency_key: idempotency_key || null,
