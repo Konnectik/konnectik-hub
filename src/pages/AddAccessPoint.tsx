@@ -1,19 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MapPin, ChevronRight, ArrowLeft, ArrowRight } from "lucide-react";
+import { MapPin, ChevronRight, ArrowLeft, ArrowRight, Copy, Save } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { useAddAccessPoint } from "@/hooks/use-access-points";
+import { useAddAccessPoint, useUpdateAccessPoint } from "@/hooks/use-access-points";
 import { useProviders } from "@/hooks/use-providers";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
 
 const AddAccessPoint = () => {
   const navigate = useNavigate();
   const addAp = useAddAccessPoint();
+  const updateAp = useUpdateAccessPoint();
   const { data: providers = [] } = useProviders();
   const [step, setStep] = useState(1);
+  const [apId, setApId] = useState<string | null>(null);
+  const [provisioning, setProvisioning] = useState(false);
+  const [provisionError, setProvisionError] = useState<string | null>(null);
+  const [command, setCommand] = useState("");
+  const [tunnelIp, setTunnelIp] = useState("");
+  const [tunnelStatus, setTunnelStatus] = useState<"pending" | "connected" | "disconnected">("pending");
+  const provisionedRef = useRef(false);
 
   const [form, setForm] = useState({
     zone_label: "",
@@ -56,16 +65,33 @@ const AddAccessPoint = () => {
     return true;
   };
 
-  const handleNext = () => {
-    if (validateStep1()) setStep(2);
+  const provision = async (id: string) => {
+    setProvisioning(true);
+    setProvisionError(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("provision-router", {
+        body: { ap_id: id },
+      });
+      if (error) throw error;
+      if (data?.command) setCommand(data.command);
+      if (data?.tunnel_ip) setTunnelIp(data.tunnel_ip);
+    } catch (e: any) {
+      setProvisionError(e?.message || "Failed to generate router configuration");
+    } finally {
+      setProvisioning(false);
+    }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleNext = async () => {
+    if (!validateStep1()) return;
+    if (apId) {
+      setStep(2);
+      return;
+    }
     const lat = parseFloat(form.latitude);
     const lng = parseFloat(form.longitude);
     try {
-      await addAp.mutateAsync({
+      const created = await addAp.mutateAsync({
         provider_id: form.provider_id,
         zone_label: form.zone_label.trim(),
         location: `${lat.toFixed(5)},${lng.toFixed(5)}`,
@@ -76,10 +102,56 @@ const AddAccessPoint = () => {
         router_type: form.router_type.trim() || undefined,
         speed_profile_name: form.speed_profile_name.trim() || undefined,
       });
+      setApId(created.id);
+      setStep(2);
+    } catch (error: any) {
+      toast({ title: error.message || "Failed to create access point", variant: "destructive" });
+    }
+  };
+
+  // Auto-provision on entering step 2
+  useEffect(() => {
+    if (step !== 2 || !apId || provisionedRef.current) return;
+    provisionedRef.current = true;
+    provision(apId);
+  }, [step, apId]);
+
+  // Realtime: watch tunnel_status
+  useEffect(() => {
+    if (step !== 2 || !apId) return;
+    if (tunnelStatus === "connected") return;
+    const channel = supabase
+      .channel(`ap-tunnel-add-${apId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "access_points", filter: `id=eq.${apId}` },
+        (payload) => {
+          const row = payload.new as any;
+          if (row.tunnel_status) setTunnelStatus(row.tunnel_status);
+          if (row.tunnel_ip) setTunnelIp(row.tunnel_ip);
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [step, apId, tunnelStatus]);
+
+  const handleDone = async () => {
+    if (!apId) return;
+    try {
+      await updateAp.mutateAsync({
+        id: apId,
+        updates: {
+          router_type: form.router_type.trim() || null,
+          speed_profile_name: form.speed_profile_name.trim() || null,
+          router_ip: tunnelIp || null,
+        },
+      });
       toast({ title: "Access point added successfully!" });
       navigate("/dashboard/k-zones");
     } catch (error: any) {
-      toast({ title: error.message || "Failed to add access point", variant: "destructive" });
+      toast({ title: error.message || "Failed to save access point", variant: "destructive" });
     }
   };
 
@@ -109,8 +181,8 @@ const AddAccessPoint = () => {
               </button>
               <button
                 type="button"
-                onClick={() => { if (validateStep1()) setStep(2); }}
-                className={`text-sm font-semibold pb-3 px-1 transition-colors ${step === 2 ? "text-primary border-b-[3px] border-primary" : "text-muted-foreground hover:text-foreground"}`}
+                onClick={() => { if (apId) setStep(2); }}
+                className={`text-sm font-semibold pb-3 px-1 transition-colors ${step === 2 ? "text-primary border-b-[3px] border-primary" : "text-muted-foreground hover:text-foreground"} ${!apId ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 2. Router Information
               </button>
@@ -118,7 +190,7 @@ const AddAccessPoint = () => {
             <div className="border-b border-border -mx-8" />
           </div>
 
-          <form onSubmit={handleSubmit} className="px-8 py-8">
+          <div className="px-8 py-8">
             <div className="max-w-md mx-auto space-y-5">
               {step === 1 && (
                 <>
@@ -175,8 +247,8 @@ const AddAccessPoint = () => {
                   </div>
 
                   <div className="pt-4">
-                    <Button type="button" onClick={handleNext} className="w-full uppercase font-bold tracking-wide">
-                      Next <ArrowRight size={16} className="ml-2" />
+                    <Button type="button" onClick={handleNext} disabled={addAp.isPending} className="w-full uppercase font-bold tracking-wide">
+                      {addAp.isPending ? "Creating..." : <>Next <ArrowRight size={16} className="ml-2" /></>}
                     </Button>
                   </div>
                 </>
@@ -191,25 +263,89 @@ const AddAccessPoint = () => {
 
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Speed Profile</Label>
-                    <Input placeholder="e.g. 5M/5M" value={form.speed_profile_name} onChange={(e) => setForm({ ...form, speed_profile_name: e.target.value })} />
+                    <Select value={form.speed_profile_name} onValueChange={(val) => setForm({ ...form, speed_profile_name: val })}>
+                      <SelectTrigger><SelectValue placeholder="Select bandwidth" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5M/5M">5 Mbps / 5 Mbps</SelectItem>
+                        <SelectItem value="10M/10M">10 Mbps / 10 Mbps</SelectItem>
+                        <SelectItem value="20M/20M">20 Mbps / 20 Mbps</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
-                  <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
-                    The WireGuard IP will be assigned by an administrator after the access point is created and the VPN tunnel is configured.
-                  </p>
+                  {/* Generated command block */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Paste this into your Mikrotik terminal</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Open Winbox → click your router → New Terminal, then paste the commands below.
+                    </p>
+                    <div className="relative">
+                      <div className="bg-slate-900 text-slate-100 rounded-lg p-4 pr-12 font-mono text-xs whitespace-pre-wrap border border-border leading-relaxed min-h-[200px]">
+                        {provisioning && !command
+                          ? "Generating router configuration..."
+                          : provisionError
+                          ? `⚠ ${provisionError}`
+                          : command || "Waiting..."}
+                      </div>
+                      {command && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(command);
+                            toast({ title: "Commands copied to clipboard" });
+                          }}
+                          className="absolute top-2 right-2 p-2 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-100 transition-colors"
+                          aria-label="Copy commands"
+                        >
+                          <Copy size={14} />
+                        </button>
+                      )}
+                    </div>
+                    {provisionError && apId && (
+                      <Button type="button" variant="outline" size="sm" onClick={() => provision(apId)}>
+                        Retry
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Tunnel status indicator */}
+                  <div className="flex items-center gap-3 p-3 rounded-lg border border-border">
+                    <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
+                      tunnelStatus === "connected"
+                        ? "bg-green-500"
+                        : tunnelStatus === "disconnected"
+                        ? "bg-red-500"
+                        : "bg-amber-400 animate-pulse"
+                    }`} />
+                    <div>
+                      <p className="text-sm font-medium">
+                        {tunnelStatus === "connected"
+                          ? "Router connected successfully"
+                          : tunnelStatus === "disconnected"
+                          ? "Connection lost — re-paste the commands"
+                          : "Waiting for router connection..."}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {tunnelStatus === "connected" && tunnelIp
+                          ? `Tunnel IP: ${tunnelIp}`
+                          : "This updates automatically. No need to refresh."}
+                      </p>
+                    </div>
+                  </div>
 
                   <div className="flex gap-3 pt-4">
                     <Button type="button" variant="outline" onClick={() => setStep(1)} className="flex-1 uppercase font-bold tracking-wide">
                       <ArrowLeft size={16} className="mr-2" /> Back
                     </Button>
-                    <Button type="submit" className="flex-1 uppercase font-bold tracking-wide" disabled={addAp.isPending}>
-                      {addAp.isPending ? "Adding..." : "Add Access Point"}
+                    <Button type="button" onClick={handleDone} className="flex-1 uppercase font-bold tracking-wide" disabled={updateAp.isPending}>
+                      <Save size={16} className="mr-2" />
+                      {updateAp.isPending ? "Saving..." : "Done"}
                     </Button>
                   </div>
                 </>
               )}
             </div>
-          </form>
+          </div>
         </div>
       </div>
     </div>
