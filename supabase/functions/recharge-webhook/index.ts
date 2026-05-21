@@ -1,0 +1,132 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+};
+
+// Verify Netwallet callback token: sha256("{orderId}_{secondary_key}")
+async function verifyCallbackToken(token: string, orderId: string): Promise<boolean> {
+  const secondaryKey = Deno.env.get('NETWALLET_SECONDARY_KEY');
+  if (!secondaryKey) return false;
+
+  const input = `${orderId}_${secondaryKey}`;
+  const encoder = new TextEncoder();
+  const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(input));
+  const expected = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+  return token === expected;
+}
+
+// Map Netwallet status to our internal status.
+// PENDING = intermediate state (the user hasn't accepted the prompt on their phone yet);
+// keep the tx as pending so a later SUCCESS/FAILED callback can still settle it.
+function mapStatus(nwStatus: string): 'confirmed' | 'failed' | 'pending' {
+  switch (nwStatus.toUpperCase()) {
+    case 'SUCCESS': return 'confirmed';
+    case 'PENDING': return 'pending';
+    case 'FAILED':
+    case 'CANCELLED':
+    case 'TIMEOUT':
+    default: return 'failed';
+  }
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const body = await req.json();
+    const { Status, TransactionId } = body;
+
+    if (!TransactionId || typeof TransactionId !== 'string') {
+      return new Response(JSON.stringify({ error: 'TransactionId is required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!Status || typeof Status !== 'string') {
+      return new Response(JSON.stringify({ error: 'Status is required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const adminClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    // Find the pending transaction by aggregator_ref (Netwallet TransactionId)
+    const { data: tx, error: txError } = await adminClient
+      .from('wallet_transactions')
+      .select('*')
+      .eq('aggregator_ref', TransactionId)
+      .eq('status', 'pending')
+      .single();
+
+    if (txError || !tx) {
+      return new Response(JSON.stringify({ error: 'Transaction not found or already processed' }), {
+        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Validate X-CallbackToken using the order's reference as orderId
+    const callbackToken = req.headers.get('X-CallbackToken');
+    if (callbackToken) {
+      const valid = await verifyCallbackToken(callbackToken, tx.reference);
+      if (!valid) {
+        return new Response(JSON.stringify({ error: 'Invalid callback token' }), {
+          status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    const internalStatus = mapStatus(Status);
+
+    if (internalStatus === 'pending') {
+      // Intermediate callback — leave tx as pending and just acknowledge.
+      return new Response(JSON.stringify({ received: true }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (internalStatus === 'confirmed') {
+      await adminClient
+        .from('wallet_transactions')
+        .update({ status: 'confirmed' })
+        .eq('id', tx.id);
+
+      const { data: profile } = await adminClient
+        .from('profiles')
+        .select('wallet_balance_xaf')
+        .eq('id', tx.user_id)
+        .single();
+
+      const currentBalance = profile?.wallet_balance_xaf ?? 0;
+      await adminClient
+        .from('profiles')
+        .update({ wallet_balance_xaf: currentBalance + tx.net_xaf })
+        .eq('id', tx.user_id);
+
+      return new Response(JSON.stringify({ received: true }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // failed | cancelled | timeout
+    await adminClient
+      .from('wallet_transactions')
+      .update({ status: 'failed' })
+      .eq('id', tx.id);
+
+    return new Response(JSON.stringify({ received: true }), {
+      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (err) {
+    return new Response(JSON.stringify({ error: (err as Error).message }), {
+      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});
