@@ -25,7 +25,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-<<<<<<< HEAD
 
 # Secrets / env
 .env
@@ -35,8 +34,8 @@ dist-ssr
 # Konnectik PWA — has its own repo (Konnectik/appweb)
 konnectik/
 
-# Claude Code local settings (peuvent contenir des tokens)
-.claude/settings.local.json
+# Claude Code local settings (contient des tokens MCP)
+.claude/
 
 # Supabase CLI local state
 supabase/.temp/
@@ -48,5 +47,6 @@ supabase/.branches/
 bun.lockb
 bun.lock
 pnpm-lock.yaml
-=======
->>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
+
+# Windows reserved name (cannot be committed)
+nul
