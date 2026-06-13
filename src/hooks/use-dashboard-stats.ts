@@ -1,7 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+export type DashboardStatsScope = 'admin' | 'provider' | 'user' | 'anonymous';
+
 export interface DashboardStats {
+  /**
+   * Tells the UI which subset of fields is meaningful. The RPC returns zeros
+   * for fields that are not in scope, but components should still avoid
+   * rendering admin-only widgets (platform revenue, total users) when
+   * scope !== 'admin' to keep the UX coherent.
+   */
+  scope: DashboardStatsScope;
+  provider_id?: string;
   total_users: number;
   active_bundles: number;
   active_sessions: number;

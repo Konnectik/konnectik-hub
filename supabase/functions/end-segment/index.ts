@@ -79,34 +79,68 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (segment.status !== 'active') {
-      return new Response(JSON.stringify({ error: `Segment is already ${segment.status}` }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // 2. Compute time used
+    // 2. Compute time used (only meaningful if we are actually closing here)
     const now = new Date();
     const startedAt = new Date(segment.started_at);
     const timeUsedMs = now.getTime() - startedAt.getTime();
     const timeUsedMinutes = Math.max(0, Math.round(timeUsedMs / 60000));
 
-    // 3. End the segment
-    const { error: updateError } = await adminClient
+    // 2b. Idempotent: if not active anymore, just return what we have.
+    // Avoids 400s when the client retries (poor network, double-tap, sw retry).
+    if (segment.status !== 'active') {
+      console.log('[end-segment] already closed, returning idempotent OK', {
+        segment_id, status: segment.status,
+      });
+      return new Response(JSON.stringify({
+        segment_id: segment.id,
+        time_used_minutes: segment.time_used_minutes ?? 0,
+        remaining_minutes: 0,
+        bundle_status: 'unknown',
+        already_ended: true,
+        message: `Segment was already ${segment.status}`,
+      }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 3. Atomically claim the close. If a concurrent request already ended
+    // the segment between our SELECT and now, `claimed` will be empty and we
+    // must NOT double-credit the provider ledger downstream.
+    const { data: claimed, error: updateError } = await adminClient
       .from('session_segments')
       .update({
         status: 'ended',
         ended_at: now.toISOString(),
         time_used_minutes: timeUsedMinutes,
       })
-      .eq('id', segment_id);
+      .eq('id', segment_id)
+      .eq('status', 'active')
+      .select('id, time_used_minutes');
 
     if (updateError) throw updateError;
 
-    // 4. Revoke user on Mikrotik router via VPS relay (soft fail)
+    if (!claimed || claimed.length === 0) {
+      // Lost the race — another request closed it already.
+      console.log('[end-segment] race lost, returning idempotent OK', { segment_id });
+      return new Response(JSON.stringify({
+        segment_id: segment.id,
+        time_used_minutes: segment.time_used_minutes ?? 0,
+        remaining_minutes: 0,
+        bundle_status: 'unknown',
+        already_ended: true,
+        message: 'Segment was closed concurrently',
+      }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 4. Force-disconnect the user on the Mikrotik (soft fail).
+    // Two-stage:
+    //   a) /hotspot/remove-user  — deletes the auth entry on the router
+    //   b) /hotspot/kick-active  — kicks any still-connected device by username
+    // Both are best-effort: we never block the close on relay availability.
     if (segment.ap_id && segment.mikrotik_user_name) {
       try {
-        // Fetch AP router_ip
         const { data: apData } = await adminClient
           .from('access_points')
           .select('router_ip')
@@ -117,10 +151,20 @@ Deno.serve(async (req) => {
           await callMikrotikRelay('hotspot/remove-user', {
             router_ip: apData.router_ip,
             username: segment.mikrotik_user_name,
+          }).catch((e) => {
+            console.error('[end-segment] remove-user failed:', (e as Error).message);
+          });
+
+          // Force kick if the device is still online with this username.
+          await callMikrotikRelay('hotspot/kick-active', {
+            router_ip: apData.router_ip,
+            username: segment.mikrotik_user_name,
+          }).catch((e) => {
+            // The relay may not have this endpoint yet — that's OK, fall back to the timeout.
+            console.warn('[end-segment] kick-active not available or failed:', (e as Error).message);
           });
         }
       } catch (relayErr) {
-        // Soft fail: log but don't block — router session will timeout naturally
         console.error(`[end-segment] Relay revoke failed for segment ${segment.id}:`, (relayErr as Error).message);
       }
     }
@@ -175,8 +219,9 @@ Deno.serve(async (req) => {
         const platformFee = Math.round(grossXaf * PLATFORM_FEE_RATE);
         const netXaf = grossXaf - platformFee;
 
-        // Insert earnings record
-        const { data: earnings } = await adminClient
+        // Insert earnings record. provider_earnings_ledger.segment_id is UNIQUE
+        // (see phase4-v4-schema.sql) so a retry hits 23505 instead of double-paying.
+        const { data: earnings, error: earnErr } = await adminClient
           .from('provider_earnings_ledger')
           .insert({
             segment_id: segment.id,
@@ -193,6 +238,13 @@ Deno.serve(async (req) => {
           })
           .select('id, net_xaf')
           .single();
+
+        if (earnErr && (earnErr as { code?: string }).code === '23505') {
+          // Already allocated for this segment by a prior call — idempotent skip.
+          console.log('[end-segment] earnings already allocated, skipping credit', { segment_id: segment.id });
+        } else if (earnErr) {
+          throw earnErr;
+        }
 
         earningsRecord = earnings;
 

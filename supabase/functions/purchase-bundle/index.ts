@@ -5,6 +5,17 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000;
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+const GPS_GRACE_METERS = 50;
+const GPS_GRACE_FACTOR = 1.3;
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -31,7 +42,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { plan_id, idempotency_key } = await req.json();
+    const { plan_id, idempotency_key, ap_id, user_lat, user_lng, gps_accuracy_m } = await req.json();
 
     if (!plan_id || typeof plan_id !== 'string') {
       return new Response(JSON.stringify({ error: 'plan_id is required' }), {
@@ -44,6 +55,30 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
+
+    // Early proximity gate when an ap_id is provided. This blocks accidental
+    // purchases by far-away users; the real enforcement happens in start-segment.
+    if (ap_id && typeof user_lat === 'number' && typeof user_lng === 'number') {
+      const { data: ap } = await adminClient
+        .from('access_points')
+        .select('id, zone_label, latitude, longitude, propagation_radius_m')
+        .eq('id', ap_id)
+        .maybeSingle();
+      if (ap && typeof ap.latitude === 'number' && typeof ap.longitude === 'number' && ap.propagation_radius_m) {
+        const distance = haversineMeters(user_lat, user_lng, ap.latitude, ap.longitude);
+        const maxAllowed = ap.propagation_radius_m * GPS_GRACE_FACTOR + GPS_GRACE_METERS + (typeof gps_accuracy_m === 'number' ? gps_accuracy_m : 0);
+        if (distance > maxAllowed) {
+          return new Response(JSON.stringify({
+            error: `Vous êtes trop loin de ${ap.zone_label} pour acheter ce forfait.`,
+            code: 'OUT_OF_RANGE',
+            distance_m: Math.round(distance),
+            max_allowed_m: Math.round(maxAllowed),
+          }), {
+            status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+    }
 
     // Idempotency check
     if (idempotency_key) {

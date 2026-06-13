@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import PageTabs from '@/components/PageTabs';
 import { useProviderProfile, useProviderEarningsSummary, useProviderEarningsHistory } from '@/hooks/use-provider-earnings';
+import { usePayoutRequests, type PayoutStatus } from '@/hooks/use-payout-requests';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,12 +29,22 @@ const ProviderDashboard = () => {
   const [payoutOpen, setPayoutOpen] = useState(false);
   const [payoutAmount, setPayoutAmount] = useState('');
   const [payoutMethod, setPayoutMethod] = useState('');
+  const [payoutPhone, setPayoutPhone] = useState('');
   const [requesting, setRequesting] = useState(false);
 
   const { profile } = useAuth();
   const { data: provider, isLoading: providerLoading } = useProviderProfile();
   const { data: summary, isLoading: summaryLoading } = useProviderEarningsSummary(provider?.id);
   const { data: history = [], isLoading: historyLoading } = useProviderEarningsHistory(provider?.id);
+  const { data: payouts = [], isLoading: payoutsLoading } = usePayoutRequests(provider?.id);
+
+  const payoutStatusStyles: Record<PayoutStatus, string> = {
+    pending: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+    processing: 'bg-blue-50 text-blue-700 border-blue-200',
+    completed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    failed: 'bg-red-50 text-red-700 border-red-200',
+    cancelled: 'bg-gray-50 text-gray-700 border-gray-200',
+  };
 
   const isLoading = providerLoading || summaryLoading;
   const balance = summary?.current_balance_xaf ?? 0;
@@ -52,17 +63,22 @@ const ProviderDashboard = () => {
       toast({ title: 'Select a method', description: 'Please choose a payout method.', variant: 'destructive' });
       return;
     }
+    if ((payoutMethod === 'momo' || payoutMethod === 'om') && !payoutPhone) {
+      toast({ title: 'Phone required', description: 'Enter the recipient phone number for mobile money payouts.', variant: 'destructive' });
+      return;
+    }
 
     setRequesting(true);
     try {
       const { error } = await supabase.functions.invoke('process-payout', {
-        body: { amount, method: payoutMethod },
+        body: { amount_xaf: amount, method: payoutMethod, phone_number: payoutPhone || undefined },
       });
       if (error) throw error;
       toast({ title: 'Payout requested', description: `${amount.toLocaleString()} XAF via ${payoutMethod}. Processing will begin shortly.` });
       setPayoutOpen(false);
       setPayoutAmount('');
       setPayoutMethod('');
+      setPayoutPhone('');
     } catch (e: any) {
       toast({ title: 'Payout failed', description: e.message, variant: 'destructive' });
     } finally {
@@ -254,14 +270,49 @@ const ProviderDashboard = () => {
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="text-lg">Payout Requests</CardTitle>
-                <p className="text-sm text-muted-foreground">Track your payout history</p>
+                <p className="text-sm text-muted-foreground">{payouts.length} request{payouts.length !== 1 ? 's' : ''}</p>
               </div>
               <Button onClick={() => setPayoutOpen(true)} disabled={balance < MIN_PAYOUT}>
                 <ArrowUpRight size={16} className="mr-2" />New Payout
               </Button>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground text-center py-8">No payout requests yet. Use the button above to request your first payout.</p>
+              {payoutsLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
+                </div>
+              ) : payouts.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">No payout requests yet.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Date</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Method</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Amount</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Fee</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Net</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {payouts.map((p) => (
+                        <tr key={p.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
+                          <td className="py-3 px-4 text-sm">{new Date(p.requested_at).toLocaleString()}</td>
+                          <td className="py-3 px-4 text-sm uppercase">{p.method}</td>
+                          <td className="py-3 px-4 text-sm font-medium">{p.amount_xaf.toLocaleString()} XAF</td>
+                          <td className="py-3 px-4 text-sm text-muted-foreground">-{p.fee_xaf.toLocaleString()}</td>
+                          <td className="py-3 px-4 text-sm font-bold">{p.net_xaf.toLocaleString()} XAF</td>
+                          <td className="py-3 px-4">
+                            <Badge variant="outline" className={payoutStatusStyles[p.status]}>{p.status}</Badge>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
@@ -288,10 +339,22 @@ const ProviderDashboard = () => {
                 <SelectContent>
                   <SelectItem value="momo">Mobile Money (MTN)</SelectItem>
                   <SelectItem value="om">Orange Money</SelectItem>
-                  <SelectItem value="bank">Bank Transfer</SelectItem>
+                  <SelectItem value="bank">Bank Transfer (processed manually within 24h)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+            {(payoutMethod === 'momo' || payoutMethod === 'om') && (
+              <div className="space-y-2">
+                <Label>Recipient Phone</Label>
+                <Input
+                  type="tel"
+                  placeholder="237 6XX XXX XXX"
+                  value={payoutPhone}
+                  onChange={(e) => setPayoutPhone(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">Format: 237XXXXXXXXX or 6XXXXXXXX</p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>

@@ -11,6 +11,21 @@ function formatTimeLimit(minutes: number): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`;
 }
 
+// Haversine — distance in meters between two lat/lng points.
+function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000; // Earth radius in meters
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+// Grace factor accounts for GPS accuracy & propagation overshoot at signal edge.
+const GPS_GRACE_METERS = 50;
+const GPS_GRACE_FACTOR = 1.3;
+
 async function callMikrotikRelay(action: string, payload: Record<string, unknown>) {
   const url = Deno.env.get('MIKROTIK_RELAY_URL');
   const apiKey = Deno.env.get('MIKROTIK_RELAY_API_KEY');
@@ -50,10 +65,25 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { bundle_id, ap_id, mac_address, ios_token } = await req.json();
+    const { bundle_id, ap_id, mac_address, ios_token, user_lat, user_lng, gps_accuracy_m } = await req.json();
 
     if (!bundle_id || typeof bundle_id !== 'string') {
       return new Response(JSON.stringify({ error: 'bundle_id is required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!ap_id || typeof ap_id !== 'string') {
+      return new Response(JSON.stringify({ error: 'ap_id is required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (typeof user_lat !== 'number' || typeof user_lng !== 'number') {
+      return new Response(JSON.stringify({
+        error: 'Location required. Enable GPS to start a session.',
+        code: 'LOCATION_REQUIRED',
+      }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -62,6 +92,52 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
+
+    // 0. Verify the user is physically within the AP's propagation range.
+    // This is the primary anti-abuse gate before consuming any bundle minutes.
+    const { data: ap, error: apError } = await adminClient
+      .from('access_points')
+      .select('id, zone_label, latitude, longitude, propagation_radius_m, status')
+      .eq('id', ap_id)
+      .single();
+
+    if (apError || !ap) {
+      return new Response(JSON.stringify({ error: 'Access point not found', code: 'AP_NOT_FOUND' }), {
+        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (ap.status !== 'online') {
+      return new Response(JSON.stringify({
+        error: `Access point is ${ap.status}, cannot start session here.`,
+        code: 'AP_NOT_ONLINE',
+        ap_status: ap.status,
+      }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (typeof ap.latitude === 'number' && typeof ap.longitude === 'number' && ap.propagation_radius_m) {
+      const distance = haversineMeters(user_lat, user_lng, ap.latitude, ap.longitude);
+      const maxAllowed = ap.propagation_radius_m * GPS_GRACE_FACTOR + GPS_GRACE_METERS + (typeof gps_accuracy_m === 'number' ? gps_accuracy_m : 0);
+      console.log('[start-segment] proximity check', {
+        userId: user.id, ap_id, distance_m: Math.round(distance),
+        radius_m: ap.propagation_radius_m, max_allowed_m: Math.round(maxAllowed),
+        gps_accuracy_m: gps_accuracy_m ?? null,
+      });
+      if (distance > maxAllowed) {
+        return new Response(JSON.stringify({
+          error: `Vous êtes trop loin de ${ap.zone_label}. Rapprochez-vous du point d'accès.`,
+          code: 'OUT_OF_RANGE',
+          distance_m: Math.round(distance),
+          max_allowed_m: Math.round(maxAllowed),
+        }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    } else {
+      console.warn('[start-segment] AP has no coordinates or radius — proximity check skipped', { ap_id });
+    }
 
     // 1. Validate the bundle belongs to the user and is active
     const { data: bundle, error: bundleError } = await adminClient

@@ -117,9 +117,10 @@ const Dashboard = () => {
 
   const visibleCards = isAdmin ? kpiCards : kpiCards.filter((c) => !c.adminOnly);
 
-  // Revenue chart data
-  const gmv = stats?.total_gmv_xaf ?? 0;
-  const platformRevenue = stats?.platform_revenue_xaf ?? 0;
+  // Revenue chart data — only meaningful for admin scope.
+  const isAdminScope = stats?.scope === 'admin';
+  const gmv = isAdminScope ? (stats?.total_gmv_xaf ?? 0) : 0;
+  const platformRevenue = isAdminScope ? (stats?.platform_revenue_xaf ?? 0) : 0;
   const providerRevenue = gmv - platformRevenue;
   const revenueChart = [
     { name: "GMV", amount: gmv },
@@ -173,8 +174,8 @@ const Dashboard = () => {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Revenue Chart */}
-        {isAdmin && (
+        {/* Revenue Chart — admin scope only (server enforces, UI double-checks) */}
+        {isAdmin && isAdminScope && (
           <Card className="animate-fade-in">
             <CardHeader>
               <CardTitle className="text-lg">Revenue Breakdown</CardTitle>
