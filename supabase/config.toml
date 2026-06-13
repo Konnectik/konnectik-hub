@@ -368,6 +368,14 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# --- Per-function settings ---
+# Webhooks called by Netwallet — no JWT, integrity verified via X-CallbackToken hash.
+[functions.recharge-webhook]
+verify_jwt = false
+
+[functions.payout-webhook]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
