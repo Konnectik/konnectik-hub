@@ -12,13 +12,10 @@ const json = (status: number, body: unknown) =>
   });
 
 function buildCommand(privateKey: string, vpsPublicKey: string, assignedIp: string) {
-<<<<<<< HEAD
-  const RELAY_HOST = Deno.env.get('MIKROTIK_RELAY_WG_ENDPOINT') || 'konnectik.cloud';
+  const RELAY_HOST = Deno.env.get('MIKROTIK_RELAY_WG_ENDPOINT') || 'relay.konnectik.cm';
   const VPN_SUBNET = '10.99.0.0/24';
   const VPN_SERVER_IP = '10.99.0.1/32';
 
-=======
->>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
   return `/interface wireguard add \\
   name="konnectik-vpn" \\
   private-key="${privateKey}"
@@ -26,15 +23,9 @@ function buildCommand(privateKey: string, vpsPublicKey: string, assignedIp: stri
 /interface wireguard peers add \\
   interface="konnectik-vpn" \\
   public-key="${vpsPublicKey}" \\
-<<<<<<< HEAD
   endpoint-address="${RELAY_HOST}" \\
   endpoint-port=51820 \\
   allowed-address=${VPN_SERVER_IP} \\
-=======
-  endpoint-address="relay.konnectik.cm" \\
-  endpoint-port=51820 \\
-  allowed-address=10.0.0.1/32 \\
->>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
   persistent-keepalive=25s
 
 /ip address add \\
@@ -43,16 +34,12 @@ function buildCommand(privateKey: string, vpsPublicKey: string, assignedIp: stri
 
 /ip service set www \\
   disabled=no port=80 \\
-<<<<<<< HEAD
   address=${VPN_SUBNET}
 
 /ip firewall filter add \\
   chain=input src-address=${VPN_SUBNET} \\
   action=accept place-before=0 \\
   comment="Allow Konnectik relay"`;
-=======
-  address=10.0.0.0/24`;
->>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
 }
 
 async function callRelay(path: string, payload: Record<string, unknown>) {
@@ -69,14 +56,8 @@ async function callRelay(path: string, payload: Record<string, unknown>) {
 }
 
 function nextAvailableIp(taken: Set<string>): string | null {
-<<<<<<< HEAD
-  // Subnet 10.99.0.0/24 — .1 is the VPS server itself
   for (let i = 2; i <= 254; i++) {
     const ip = `10.99.0.${i}`;
-=======
-  for (let i = 2; i <= 254; i++) {
-    const ip = `10.0.0.${i}`;
->>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
     if (!taken.has(ip)) return ip;
   }
   return null;
@@ -108,7 +89,6 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    // Authorization: caller must own the AP's provider OR be admin
     const { data: ap, error: apErr } = await admin
       .from('access_points')
       .select('id, provider_id, tunnel_ip, wg_public_key, wg_private_key_encrypted, providers(user_id)')
@@ -117,7 +97,7 @@ Deno.serve(async (req) => {
     if (apErr || !ap) return json(404, { error: 'Access point not found' });
 
     const { data: isAdmin } = await admin.rpc('has_role', { _user_id: user.id, _role: 'admin' });
-    const ownerUserId = (ap as any).providers?.user_id;
+    const ownerUserId = (ap as { providers?: { user_id: string } }).providers?.user_id;
     if (!isAdmin && ownerUserId !== user.id) {
       return json(403, { error: 'Forbidden' });
     }
@@ -125,7 +105,6 @@ Deno.serve(async (req) => {
     const vpsPublicKey = Deno.env.get('VPS_WG_PUBLIC_KEY');
     if (!vpsPublicKey) return json(500, { error: 'VPS_WG_PUBLIC_KEY not configured' });
 
-    // Idempotency: if already provisioned, just return the command
     if (ap.tunnel_ip && ap.wg_private_key_encrypted) {
       return json(200, {
         tunnel_ip: ap.tunnel_ip,
@@ -133,7 +112,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Step 1: pick next available IP
     const { data: taken, error: takenErr } = await admin
       .from('tunnel_ip_assignments')
       .select('ip');
@@ -141,19 +119,16 @@ Deno.serve(async (req) => {
     const assignedIp = nextAvailableIp(new Set((taken || []).map((r: { ip: string }) => r.ip)));
     if (!assignedIp) return json(409, { error: 'No tunnel IPs available' });
 
-    // Step 2: generate keypair on VPS
     const kp = await callRelay('/internal/generate-keypair', {});
     const publicKey = kp?.public_key;
     const privateKey = kp?.private_key;
     if (!publicKey || !privateKey) throw new Error('Relay returned invalid keypair');
 
-    // Step 3: reserve the IP
     const { error: insErr } = await admin
       .from('tunnel_ip_assignments')
       .insert({ ip: assignedIp, ap_id: apId });
     if (insErr) throw insErr;
 
-    // Step 4: persist on access point
     const { error: updErr } = await admin
       .from('access_points')
       .update({
@@ -165,13 +140,11 @@ Deno.serve(async (req) => {
       .eq('id', apId);
     if (updErr) throw updErr;
 
-    // Step 5: register peer with VPS
     await callRelay('/internal/add-peer', {
       public_key: publicKey,
       assigned_ip: assignedIp,
     });
 
-    // Step 6: build & return command
     return json(200, {
       tunnel_ip: assignedIp,
       command: buildCommand(privateKey, vpsPublicKey, assignedIp),

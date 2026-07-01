@@ -5,19 +5,28 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-// --- Netwallet token cache ---
+const TOKEN_TIMEOUT_MS = 10_000;
+const PAYMENT_TIMEOUT_MS = 20_000;
+
 let cachedToken: string | null = null;
 let tokenExpiresAt = 0;
+
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 async function getNetwalletToken(): Promise<string> {
   if (cachedToken && Date.now() < tokenExpiresAt) return cachedToken;
 
-<<<<<<< HEAD
   const baseUrl = Deno.env.get('NETWALLET_BASE_URL') || 'https://netwalletpay.com';
-=======
-  const baseUrl = Deno.env.get('NETWALLET_BASE_URL') || 'http://sandbox.netwalletpay.com';
->>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
-  const res = await fetch(`${baseUrl}/api/v1/token`, {
+  const t0 = Date.now();
+  const res = await fetchWithTimeout(`${baseUrl}/api/v1/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
@@ -25,7 +34,9 @@ async function getNetwalletToken(): Promise<string> {
       email: Deno.env.get('NETWALLET_EMAIL')!,
       grant_type: 'primary_key',
     }),
-  });
+  }, TOKEN_TIMEOUT_MS);
+
+  console.log(`[initiate-recharge] token ${res.status} in ${Date.now() - t0}ms`);
 
   if (!res.ok) {
     const txt = await res.text();
@@ -34,12 +45,10 @@ async function getNetwalletToken(): Promise<string> {
 
   const json = await res.json();
   cachedToken = json.access_token;
-  // Expire 60s early to avoid edge cases
   tokenExpiresAt = Date.now() + (json.expires_in - 60) * 1000;
   return cachedToken!;
 }
 
-// Map our payment_method to Netwallet provider IDs
 function mapProvider(method: string): { MethodType: string; MethodProvider: string } {
   switch (method) {
     case 'momo': return { MethodType: 'MOMO', MethodProvider: 'mtn_cm' };
@@ -48,13 +57,20 @@ function mapProvider(method: string): { MethodType: string; MethodProvider: stri
   }
 }
 
-// Compute SHA-256 HMAC hash for Netwallet request integrity
 async function computeHash(parts: string[]): Promise<string> {
   const input = parts.join('_');
   const encoder = new TextEncoder();
   const data = encoder.encode(input);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function normalizeCameroonPhone(raw: string): string | null {
+  const digits = raw.replace(/[^\d]/g, '');
+  if (digits.startsWith('00237')) return digits.slice(2);
+  if (digits.startsWith('237') && digits.length === 12) return digits;
+  if (digits.length === 9 && digits.startsWith('6')) return `237${digits}`;
+  return null;
 }
 
 Deno.serve(async (req) => {
@@ -104,16 +120,6 @@ Deno.serve(async (req) => {
       });
     }
 
-<<<<<<< HEAD
-    // Normalize phone number to Netwallet's expected format: "237XXXXXXXXX" (no +, no spaces).
-    // Accepts inputs like "+237 6XX XX XX XX", "6XXXXXXXX", "237XXXXXXXXX", "00237XXXXXXXXX".
-    function normalizeCameroonPhone(raw: string): string | null {
-      const digits = raw.replace(/[^\d]/g, '');
-      if (digits.startsWith('00237')) return digits.slice(2);          // 00237xxx -> 237xxx
-      if (digits.startsWith('237') && digits.length === 12) return digits;
-      if (digits.length === 9 && digits.startsWith('6')) return `237${digits}`;
-      return null;
-    }
     const normalizedPhone = normalizeCameroonPhone(phone_number);
     if (!normalizedPhone) {
       return new Response(JSON.stringify({
@@ -123,40 +129,29 @@ Deno.serve(async (req) => {
       });
     }
 
-=======
->>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
     const adminClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Calculate commission (5% + 2% Netwallet fee)
     const commission = Math.ceil(amount_xaf * 0.05);
     const total_to_charge = amount_xaf + commission;
     const netwallet_fee = Math.ceil(amount_xaf * 0.02);
     const konnectik_profit = commission - netwallet_fee;
-<<<<<<< HEAD
-    // Netwallet rejects OrderIDs with hyphens (errorCode 4007 "order info invalid").
-    // Keep alphanumeric only.
     const orderId = `RCH${Date.now()}${crypto.randomUUID().slice(0, 8).replace(/-/g, '')}`;
-=======
-    const orderId = `RCH-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
->>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
 
-    // --- Netwallet Collection API ---
     const { MethodType, MethodProvider } = mapProvider(payment_method);
     const secondaryKey = Deno.env.get('NETWALLET_SECONDARY_KEY')!;
     const hash = await computeHash(['COLLECTION', 'MOBILE_MONEY', MethodProvider, orderId, secondaryKey]);
 
-<<<<<<< HEAD
     const baseUrl = Deno.env.get('NETWALLET_BASE_URL') || 'https://netwalletpay.com';
-=======
-    const baseUrl = Deno.env.get('NETWALLET_BASE_URL') || 'http://sandbox.netwalletpay.com';
->>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
     const callbackUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/recharge-webhook`;
 
+    console.log('[initiate-recharge] start', { userId, amount_xaf, payment_method, orderId, phone: normalizedPhone.slice(0, 6) + '***' });
+
     const nwToken = await getNetwalletToken();
-    const nwRes = await fetch(`${baseUrl}/api/v1/global/collection/request-payment`, {
+    const t1 = Date.now();
+    const nwRes = await fetchWithTimeout(`${baseUrl}/api/v1/global/collection/request-payment`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${nwToken}`,
@@ -170,18 +165,21 @@ Deno.serve(async (req) => {
         MethodType,
         CountryCode: 'CM',
         MethodProvider,
-<<<<<<< HEAD
         PhoneNumber: normalizedPhone,
-=======
-        PhoneNumber: phone_number,
->>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
         Description: `Konnectik wallet recharge ${orderId}`,
         CallbackUrl: callbackUrl,
         Hash: hash,
       }),
-    });
+    }, PAYMENT_TIMEOUT_MS);
 
     const nwBody = await nwRes.json();
+    console.log('[initiate-recharge] request-payment', {
+      httpStatus: nwRes.status,
+      ms: Date.now() - t1,
+      nwStatusCode: nwBody.statusCode,
+      errorCode: nwBody.errorCode,
+      message: nwBody.message,
+    });
 
     if (!nwRes.ok || nwBody.statusCode !== 200) {
       return new Response(JSON.stringify({
@@ -192,29 +190,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    const aggregatorRef = nwBody.data; // Netwallet transactionId e.g. "MM123456789"
+    const aggregatorRef = nwBody.data;
 
-<<<<<<< HEAD
-    // Create pending wallet transaction.
-    // net_xaf = montant crédité à l'utilisateur (ce qu'il rechargera réellement).
-    // fee_xaf = commission totale prélevée (Netwallet + Konnectik profit).
-=======
-    // Create pending wallet transaction
->>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
     const { data: tx, error: txError } = await adminClient
       .from('wallet_transactions')
       .insert({
         user_id: userId,
         type: 'recharge',
-<<<<<<< HEAD
         amount_xaf: total_to_charge,
         fee_xaf: commission,
         net_xaf: amount_xaf,
-=======
-        amount_xaf,
-        fee_xaf: commission,
-        net_xaf: konnectik_profit,
->>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
         reference: orderId,
         aggregator_ref: aggregatorRef,
         status: 'pending',
@@ -229,30 +214,21 @@ Deno.serve(async (req) => {
       reference: tx.reference,
       aggregator_ref: aggregatorRef,
       amount_xaf,
-<<<<<<< HEAD
       total_charged_xaf: total_to_charge,
       fee_xaf: commission,
       konnectik_profit_xaf: konnectik_profit,
-=======
-      fee_xaf: commission,
-      net_xaf: konnectik_profit,
->>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
       message: 'Recharge initiated — awaiting payment confirmation',
     }), {
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (err) {
-<<<<<<< HEAD
     const e = err as Error;
-    console.error('[initiate-recharge] FATAL:', e.message, e.stack);
-    return new Response(JSON.stringify({
-      error: e.message || 'Unknown error',
-      stack: e.stack?.split('\n').slice(0, 5).join(' | '),
-    }), {
-=======
-    return new Response(JSON.stringify({ error: (err as Error).message }), {
->>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
+    const message = e.name === 'AbortError'
+      ? 'Payment provider timeout — please try again'
+      : (e.message || 'Unknown error');
+    console.error('[initiate-recharge] FATAL:', message, e.stack);
+    return new Response(JSON.stringify({ error: message }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
