@@ -1,34 +1,18 @@
-<<<<<<< HEAD
-import { useState } from "react";
-=======
 import { useState, useEffect, useRef } from "react";
->>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-<<<<<<< HEAD
-import { MapPin, ChevronRight, ArrowLeft, ArrowRight } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
-import { useAddAccessPoint } from "@/hooks/use-access-points";
-import { useProviders } from "@/hooks/use-providers";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-=======
 import { MapPin, ChevronRight, ArrowLeft, ArrowRight, Copy, Save } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useAddAccessPoint, useUpdateAccessPoint } from "@/hooks/use-access-points";
 import { useProviders } from "@/hooks/use-providers";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
->>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
 
 const AddAccessPoint = () => {
   const navigate = useNavigate();
   const addAp = useAddAccessPoint();
-<<<<<<< HEAD
-  const { data: providers = [] } = useProviders();
-  const [step, setStep] = useState(1);
-=======
   const updateAp = useUpdateAccessPoint();
   const { data: providers = [] } = useProviders();
   const [step, setStep] = useState(1);
@@ -39,7 +23,6 @@ const AddAccessPoint = () => {
   const [tunnelIp, setTunnelIp] = useState("");
   const [tunnelStatus, setTunnelStatus] = useState<"pending" | "connected" | "disconnected">("pending");
   const provisionedRef = useRef(false);
->>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
 
   const [form, setForm] = useState({
     zone_label: "",
@@ -82,18 +65,6 @@ const AddAccessPoint = () => {
     return true;
   };
 
-<<<<<<< HEAD
-  const handleNext = () => {
-    if (validateStep1()) setStep(2);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const lat = parseFloat(form.latitude);
-    const lng = parseFloat(form.longitude);
-    try {
-      await addAp.mutateAsync({
-=======
   const provision = async (id: string) => {
     setProvisioning(true);
     setProvisionError(null);
@@ -121,7 +92,6 @@ const AddAccessPoint = () => {
     const lng = parseFloat(form.longitude);
     try {
       const created = await addAp.mutateAsync({
->>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
         provider_id: form.provider_id,
         zone_label: form.zone_label.trim(),
         location: `${lat.toFixed(5)},${lng.toFixed(5)}`,
@@ -132,12 +102,6 @@ const AddAccessPoint = () => {
         router_type: form.router_type.trim() || undefined,
         speed_profile_name: form.speed_profile_name.trim() || undefined,
       });
-<<<<<<< HEAD
-      toast({ title: "Access point added successfully!" });
-      navigate("/dashboard/k-zones");
-    } catch (error: any) {
-      toast({ title: error.message || "Failed to add access point", variant: "destructive" });
-=======
       setApId(created.id);
       setStep(2);
     } catch (error: any) {
@@ -188,7 +152,6 @@ const AddAccessPoint = () => {
       navigate("/dashboard/k-zones");
     } catch (error: any) {
       toast({ title: error.message || "Failed to save access point", variant: "destructive" });
->>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
     }
   };
 
@@ -218,13 +181,8 @@ const AddAccessPoint = () => {
               </button>
               <button
                 type="button"
-<<<<<<< HEAD
-                onClick={() => { if (validateStep1()) setStep(2); }}
-                className={`text-sm font-semibold pb-3 px-1 transition-colors ${step === 2 ? "text-primary border-b-[3px] border-primary" : "text-muted-foreground hover:text-foreground"}`}
-=======
                 onClick={() => { if (apId) setStep(2); }}
                 className={`text-sm font-semibold pb-3 px-1 transition-colors ${step === 2 ? "text-primary border-b-[3px] border-primary" : "text-muted-foreground hover:text-foreground"} ${!apId ? "opacity-50 cursor-not-allowed" : ""}`}
->>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
               >
                 2. Router Information
               </button>
@@ -232,11 +190,7 @@ const AddAccessPoint = () => {
             <div className="border-b border-border -mx-8" />
           </div>
 
-<<<<<<< HEAD
-          <form onSubmit={handleSubmit} className="px-8 py-8">
-=======
           <div className="px-8 py-8">
->>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
             <div className="max-w-md mx-auto space-y-5">
               {step === 1 && (
                 <>
@@ -293,13 +247,8 @@ const AddAccessPoint = () => {
                   </div>
 
                   <div className="pt-4">
-<<<<<<< HEAD
-                    <Button type="button" onClick={handleNext} className="w-full uppercase font-bold tracking-wide">
-                      Next <ArrowRight size={16} className="ml-2" />
-=======
                     <Button type="button" onClick={handleNext} disabled={addAp.isPending} className="w-full uppercase font-bold tracking-wide">
                       {addAp.isPending ? "Creating..." : <>Next <ArrowRight size={16} className="ml-2" /></>}
->>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
                     </Button>
                   </div>
                 </>
@@ -314,14 +263,6 @@ const AddAccessPoint = () => {
 
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Speed Profile</Label>
-<<<<<<< HEAD
-                    <Input placeholder="e.g. 5M/5M" value={form.speed_profile_name} onChange={(e) => setForm({ ...form, speed_profile_name: e.target.value })} />
-                  </div>
-
-                  <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
-                    The WireGuard IP will be assigned by an administrator after the access point is created and the VPN tunnel is configured.
-                  </p>
-=======
                     <Select value={form.speed_profile_name} onValueChange={(val) => setForm({ ...form, speed_profile_name: val })}>
                       <SelectTrigger><SelectValue placeholder="Select bandwidth" /></SelectTrigger>
                       <SelectContent>
@@ -391,30 +332,20 @@ const AddAccessPoint = () => {
                       </p>
                     </div>
                   </div>
->>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
 
                   <div className="flex gap-3 pt-4">
                     <Button type="button" variant="outline" onClick={() => setStep(1)} className="flex-1 uppercase font-bold tracking-wide">
                       <ArrowLeft size={16} className="mr-2" /> Back
                     </Button>
-<<<<<<< HEAD
-                    <Button type="submit" className="flex-1 uppercase font-bold tracking-wide" disabled={addAp.isPending}>
-                      {addAp.isPending ? "Adding..." : "Add Access Point"}
-=======
                     <Button type="button" onClick={handleDone} className="flex-1 uppercase font-bold tracking-wide" disabled={updateAp.isPending}>
                       <Save size={16} className="mr-2" />
                       {updateAp.isPending ? "Saving..." : "Done"}
->>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
                     </Button>
                   </div>
                 </>
               )}
             </div>
-<<<<<<< HEAD
-          </form>
-=======
           </div>
->>>>>>> f1babe4355523a47af564a1a0a05a5058a628e25
         </div>
       </div>
     </div>
