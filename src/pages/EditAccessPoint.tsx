@@ -41,6 +41,7 @@ const EditAccessPoint = () => {
     tunnel_ip: "",
     wg_public_key: "",
     generated_command: "",
+    provisioning_state: "not_started",
   });
 
   useEffect(() => {
@@ -59,6 +60,7 @@ const EditAccessPoint = () => {
         tunnel_ip: ap.tunnel_ip || "",
         wg_public_key: ap.wg_public_key || "",
         generated_command: "",
+        provisioning_state: ap.provisioning_state || "not_started",
       });
     }
   }, [ap]);
@@ -74,13 +76,12 @@ const EditAccessPoint = () => {
           body: { ap_id: id },
         });
         if (error) throw error;
-        if (data?.command) {
-          setForm((f) => ({
-            ...f,
-            generated_command: data.command,
-            tunnel_ip: data.tunnel_ip || f.tunnel_ip,
-          }));
-        }
+        setForm((f) => ({
+          ...f,
+          generated_command: data?.command || f.generated_command,
+          tunnel_ip: data?.tunnel_ip || f.tunnel_ip,
+          provisioning_state: data?.state || f.provisioning_state,
+        }));
       } catch (e: any) {
         provisionedRef.current = false;
         toast({ title: "Failed to generate router commands", description: e?.message, variant: "destructive" });
@@ -91,18 +92,21 @@ const EditAccessPoint = () => {
   // If already provisioned, fetch the command lazily when entering Step 2
   useEffect(() => {
     if (step !== 2 || !id) return;
-    if (!form.tunnel_ip || form.generated_command) return;
+    if (!form.tunnel_ip || form.generated_command || provisionedRef.current) return;
+    provisionedRef.current = true;
     (async () => {
       try {
         const { data, error } = await supabase.functions.invoke("provision-router", {
           body: { ap_id: id },
         });
         if (error) throw error;
-        if (data?.command) {
-          setForm((f) => ({ ...f, generated_command: data.command }));
-        }
+        setForm((f) => ({
+          ...f,
+          generated_command: data?.command || f.generated_command,
+          provisioning_state: data?.state || f.provisioning_state,
+        }));
       } catch {
-        /* silent */
+        provisionedRef.current = false;
       }
     })();
   }, [step, id, form.tunnel_ip, form.generated_command]);
@@ -175,7 +179,6 @@ const EditAccessPoint = () => {
           longitude: lng,
           propagation_radius_m: form.propagation_radius_m,
           ssid: form.ssid || null,
-          router_ip: form.tunnel_ip || null,
           router_type: form.router_type || null,
           speed_profile_name: form.speed_profile_name || null,
           provider_id: form.provider_id,
@@ -318,7 +321,7 @@ const EditAccessPoint = () => {
                   Open Winbox → click your router → New Terminal, then paste the commands below.
                 </p>
                 <div className="bg-muted rounded-lg p-4 font-mono text-xs whitespace-pre-wrap border border-border leading-relaxed">
-                  {form.generated_command || "Generating command..."}
+                  {form.generated_command || "Private key is not available for repeat display. Verify the existing router configuration or rotate it explicitly."}
                 </div>
                 <Button
                   type="button"
@@ -349,8 +352,10 @@ const EditAccessPoint = () => {
                     {form.tunnel_status === "connected"
                       ? "Router connected successfully"
                       : form.tunnel_status === "disconnected"
-                      ? "Connection lost — re-paste the commands"
-                      : "Waiting for router connection..."}
+                      ? "Peer configured, but no router handshake"
+                      : form.provisioning_state === "peer_applied_on_vps"
+                      ? "Peer applied on VPS — waiting for handshake"
+                      : "Router configuration is being prepared..."}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {form.tunnel_status === "pending"

@@ -22,6 +22,7 @@ const AddAccessPoint = () => {
   const [command, setCommand] = useState("");
   const [tunnelIp, setTunnelIp] = useState("");
   const [tunnelStatus, setTunnelStatus] = useState<"pending" | "connected" | "disconnected">("pending");
+  const [provisionState, setProvisionState] = useState("not_started");
   const provisionedRef = useRef(false);
 
   const [form, setForm] = useState({
@@ -75,6 +76,10 @@ const AddAccessPoint = () => {
       if (error) throw error;
       if (data?.command) setCommand(data.command);
       if (data?.tunnel_ip) setTunnelIp(data.tunnel_ip);
+      if (data?.state) setProvisionState(data.state);
+      if (data?.command_delivery === "already_delivered" && !data?.command) {
+        setProvisionError("The private key was already delivered. Verify the existing router configuration or rotate the key explicitly.");
+      }
     } catch (e: any) {
       setProvisionError(e?.message || "Failed to generate router configuration");
     } finally {
@@ -145,7 +150,6 @@ const AddAccessPoint = () => {
         updates: {
           router_type: form.router_type.trim() || null,
           speed_profile_name: form.speed_profile_name.trim() || null,
-          router_ip: tunnelIp || null,
         },
       });
       toast({ title: "Access point added successfully!" });
@@ -322,13 +326,15 @@ const AddAccessPoint = () => {
                         {tunnelStatus === "connected"
                           ? "Router connected successfully"
                           : tunnelStatus === "disconnected"
-                          ? "Connection lost — re-paste the commands"
-                          : "Waiting for router connection..."}
+                          ? "Peer configured, but no router handshake"
+                          : provisionState === "peer_applied_on_vps"
+                          ? "Peer applied on VPS — waiting for handshake"
+                          : "Router configuration is being prepared..."}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {tunnelStatus === "connected" && tunnelIp
                           ? `Tunnel IP: ${tunnelIp}`
-                          : "This updates automatically. No need to refresh."}
+                          : `Provisioning state: ${provisionState}`}
                       </p>
                     </div>
                   </div>

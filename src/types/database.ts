@@ -134,6 +134,14 @@ export interface AccessPoint {
   availability_reason?: string | null;
   router_api_ok?: boolean | null;
   hotspot_ok?: boolean | null;
+  provisioning_operation_id?: string | null;
+  provisioning_state?: 'not_started' | 'configuration_prepared' | 'peer_applied_on_vps' | 'handshake_observed' | 'routeros_reachable' | 'hotspot_verified' | 'needs_intervention';
+  configuration_prepared_at?: string | null;
+  peer_applied_at?: string | null;
+  handshake_observed_at?: string | null;
+  routeros_reachable_at?: string | null;
+  hotspot_verified_at?: string | null;
+  provisioning_last_error?: string | null;
   created_at: string;
   updated_at: string;
   // joined
