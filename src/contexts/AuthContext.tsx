@@ -105,7 +105,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       email,
       password,
       options: {
-        data: { full_name: fullName, signup_source: 'platform', terms_agreed_at: new Date().toISOString() },
+        // Public metadata is never authority for an owner/admin role. New
+        // accounts remain end users until an administrator approves them.
+        data: { full_name: fullName, signup_source: 'mobile', terms_agreed_at: new Date().toISOString() },
         emailRedirectTo: window.location.origin,
       },
     });

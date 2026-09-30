@@ -11,6 +11,7 @@ export type NotificationCategory = 'system' | 'promo' | 'session' | 'wallet' | '
 export type DevicePlatform = 'ios' | 'android' | 'web';
 export type ApHealthStatus = 'ok' | 'degraded' | 'down';
 export type ApStatus = 'online' | 'offline' | 'maintenance';
+export type ApAvailabilityStatus = ApStatus | 'unknown';
 
 // ========== Existing (kept for backward compat) ==========
 
@@ -128,6 +129,11 @@ export interface AccessPoint {
   tunnel_ip?: string | null;
   tunnel_status?: 'pending' | 'connected' | 'disconnected';
   tunnel_last_seen?: string | null;
+  availability_status?: ApAvailabilityStatus;
+  availability_checked_at?: string | null;
+  availability_reason?: string | null;
+  router_api_ok?: boolean | null;
+  hotspot_ok?: boolean | null;
   created_at: string;
   updated_at: string;
   // joined

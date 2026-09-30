@@ -48,7 +48,7 @@ const SignUp = () => {
 
     toast({
       title: "Account created!",
-      description: "Please check your email to verify your account.",
+      description: "Please verify your email. Dashboard access requires administrator approval.",
     });
     setLoading(false);
   };

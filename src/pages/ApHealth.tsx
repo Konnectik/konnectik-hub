@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Activity, Wifi, WifiOff, AlertTriangle, Clock } from 'lucide-react';
-import { useAccessPointsWithHealth, useApHealthHistory } from '@/hooks/use-ap-health';
+import { useAccessPointsWithHealth, useApHealthHistory, type ApWithHealth } from '@/hooks/use-ap-health';
 import type { ApHealthStatus, ApStatus } from '@/types/database';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -36,6 +36,13 @@ const statusIcon = (status?: ApHealthStatus) => {
   }
 };
 
+const effectiveHealth = (ap: ApWithHealth) => {
+  if (ap?.availability_status === 'online') return 'ok' as const;
+  if (ap?.availability_status === 'offline') return 'down' as const;
+  if (ap?.availability_status === 'maintenance' || ap?.availability_status === 'unknown') return 'degraded' as const;
+  return ap?.latest_health?.status;
+};
+
 const ApHealth = () => {
   const { data: aps, isLoading } = useAccessPointsWithHealth();
   const [selectedApId, setSelectedApId] = useState<string | null>(null);
@@ -45,10 +52,10 @@ const ApHealth = () => {
 
   const counts = {
     total: aps?.length ?? 0,
-    online: aps?.filter((ap) => ap.latest_health?.status === 'ok').length ?? 0,
-    degraded: aps?.filter((ap) => ap.latest_health?.status === 'degraded').length ?? 0,
-    down: aps?.filter((ap) => ap.latest_health?.status === 'down').length ?? 0,
-    noData: aps?.filter((ap) => !ap.latest_health).length ?? 0,
+    online: aps?.filter((ap) => effectiveHealth(ap) === 'ok').length ?? 0,
+    degraded: aps?.filter((ap) => effectiveHealth(ap) === 'degraded').length ?? 0,
+    down: aps?.filter((ap) => effectiveHealth(ap) === 'down').length ?? 0,
+    noData: aps?.filter((ap) => !ap.availability_checked_at && !ap.latest_health).length ?? 0,
   };
 
   return (
@@ -118,8 +125,8 @@ const ApHealth = () => {
                   <TableRow key={ap.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        {statusIcon(ap.latest_health?.status)}
-                        {healthBadge(ap.latest_health?.status)}
+                        {statusIcon(effectiveHealth(ap))}
+                        {healthBadge(effectiveHealth(ap))}
                       </div>
                     </TableCell>
                     <TableCell className="font-medium">{ap.zone_label}</TableCell>
@@ -131,10 +138,10 @@ const ApHealth = () => {
                         : '—'}
                     </TableCell>
                     <TableCell>
-                      {ap.latest_health?.checked_at ? (
+                      {ap.availability_checked_at || ap.latest_health?.checked_at ? (
                         <span className="flex items-center gap-1 text-sm text-muted-foreground">
                           <Clock className="h-3 w-3" />
-                          {formatDistanceToNow(new Date(ap.latest_health.checked_at), { addSuffix: true })}
+                          {formatDistanceToNow(new Date(ap.availability_checked_at ?? ap.latest_health!.checked_at), { addSuffix: true })}
                         </span>
                       ) : (
                         '—'
