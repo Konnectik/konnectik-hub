@@ -57,6 +57,13 @@ function handler(req, res) {
 }
 
 const server = http.createServer(handler);
-server.listen(Number(process.env.PORT || 3000), process.env.HOST || '127.0.0.1');
+const host = process.env.HOST || '0.0.0.0';
+const port = process.env.PORT || 3000;
+server.listen(port, host, () => {
+  console.log(`Konnectik dashboard listening on ${host}:${port}`);
+});
+server.on('error', (error) => {
+  console.error('Konnectik dashboard failed to start:', error);
+});
 
 module.exports = { handler, server };
