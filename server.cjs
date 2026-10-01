@@ -59,9 +59,16 @@ function handler(req, res) {
 const server = http.createServer(handler);
 const host = process.env.HOST || '0.0.0.0';
 const port = process.env.PORT || 3000;
-server.listen(port, host, () => {
-  console.log(`Konnectik dashboard listening on ${host}:${port}`);
-});
+const underPassenger = typeof PhusionPassenger !== 'undefined';
+if (underPassenger) {
+  server.listen('passenger', () => {
+    console.log('Konnectik dashboard listening through Phusion Passenger');
+  });
+} else {
+  server.listen(Number(port), host, () => {
+    console.log(`Konnectik dashboard listening on ${host}:${port}`);
+  });
+}
 server.on('error', (error) => {
   console.error('Konnectik dashboard failed to start:', error);
 });

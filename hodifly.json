@@ -1,9 +1,9 @@
 {
-  "mode": "static",
+  "mode": "node",
   "runtime": "node:24",
   "install": "bun install --frozen-lockfile",
   "build": "bun run build",
-  "output": "dist",
+  "startup": "server.cjs",
   "keepReleases": 5,
   "forceHttps": true
 }
