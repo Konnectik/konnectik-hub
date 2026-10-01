@@ -3,7 +3,7 @@
   "runtime": "node:24",
   "install": "bun install --frozen-lockfile",
   "build": "bun run build",
-  "startup": "server.cjs",
+  "startup": "app.js",
   "keepReleases": 5,
   "forceHttps": true
 }
