@@ -5,6 +5,7 @@ import { useAccessPoints } from "@/hooks/use-access-points";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
+import { effectiveAvailability } from "@/lib/ap-availability";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -13,6 +14,7 @@ const statusColor: Record<string, string> = {
   online: "text-green-500",
   offline: "text-red-500",
   maintenance: "text-yellow-500",
+  unknown: "text-slate-500",
 };
 
 const KZones = () => {
@@ -53,7 +55,8 @@ const KZones = () => {
                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Provider</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">SSID</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Router IP</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Status</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Disponibilité</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Provisionnement</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Date Added</th>
                     <th className="w-10"></th>
                   </tr>
@@ -63,6 +66,7 @@ const KZones = () => {
                     const date = new Date(ap.created_at);
                     const lat = ap.latitude;
                     const lng = ap.longitude;
+                    const availability = effectiveAvailability(ap);
                     return (
                       <tr
                         key={ap.id}
@@ -103,9 +107,19 @@ const KZones = () => {
                         <td className="py-4 px-4 text-sm">{ap.ssid || "—"}</td>
                         <td className="py-4 px-4 text-sm font-mono">{ap.router_ip || "—"}</td>
                         <td className="py-4 px-4">
-                          <span className={`font-medium capitalize ${statusColor[ap.status] || ""}`}>
-                            {ap.status}
+                          <span className={`font-medium capitalize ${statusColor[availability.status] || ""}`}>
+                            {availability.status}
                           </span>
+                          <div className="max-w-56 text-xs text-muted-foreground">{availability.reason}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {availability.checkedAt ? new Date(availability.checkedAt).toLocaleString() : "Jamais vérifié"}
+                          </div>
+                        </td>
+                        <td className="py-4 px-4 text-sm">
+                          <div className="font-medium">{ap.provisioning_state || "not_started"}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {ap.tunnel_status === "connected" ? "Handshake observé" : "Tunnel non connecté"}
+                          </div>
                         </td>
                         <td className="py-4 px-4">
                           <div className="text-sm font-semibold">{date.toLocaleDateString()}</div>

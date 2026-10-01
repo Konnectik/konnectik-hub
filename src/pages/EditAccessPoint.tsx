@@ -36,7 +36,7 @@ const EditAccessPoint = () => {
     router_type: "",
     speed_profile_name: "",
     provider_id: "",
-    status: "offline" as string,
+    maintenance_mode: false,
     tunnel_status: "pending" as "pending" | "connected" | "disconnected",
     tunnel_ip: "",
     wg_public_key: "",
@@ -55,7 +55,7 @@ const EditAccessPoint = () => {
         router_type: ap.router_type || "",
         speed_profile_name: ap.speed_profile_name || "",
         provider_id: ap.provider_id,
-        status: ap.status,
+        maintenance_mode: ap.status === "maintenance" || ap.availability_status === "maintenance",
         tunnel_status: (ap.tunnel_status as any) || "pending",
         tunnel_ip: ap.tunnel_ip || "",
         wg_public_key: ap.wg_public_key || "",
@@ -170,9 +170,7 @@ const EditAccessPoint = () => {
     const lat = parseFloat(form.latitude);
     const lng = parseFloat(form.longitude);
     try {
-      await updateAp.mutateAsync({
-        id,
-        updates: {
+      const updates: any = {
           zone_label: form.zone_label,
           location: `${lat.toFixed(5)},${lng.toFixed(5)}`,
           latitude: lat,
@@ -182,8 +180,14 @@ const EditAccessPoint = () => {
           router_type: form.router_type || null,
           speed_profile_name: form.speed_profile_name || null,
           provider_id: form.provider_id,
-          status: form.status as any,
-        },
+      };
+      const wasInMaintenance = ap.status === "maintenance" || ap.availability_status === "maintenance";
+      if (form.maintenance_mode !== wasInMaintenance) {
+        updates.status = form.maintenance_mode ? "maintenance" : "offline";
+      }
+      await updateAp.mutateAsync({
+        id,
+        updates,
       });
       toast({ title: "Access point updated successfully" });
       navigate("/dashboard/k-zones");
@@ -287,15 +291,15 @@ const EditAccessPoint = () => {
                   <Input type="number" value={form.propagation_radius_m} onChange={(e) => setForm({ ...form, propagation_radius_m: Number(e.target.value) })} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Status</Label>
-                  <Select value={form.status} onValueChange={(val) => setForm({ ...form, status: val })}>
+                  <Label>Mode opérationnel</Label>
+                  <Select value={form.maintenance_mode ? "maintenance" : "automatic"} onValueChange={(val) => setForm({ ...form, maintenance_mode: val === "maintenance" })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="online">Online</SelectItem>
-                      <SelectItem value="offline">Offline</SelectItem>
+                      <SelectItem value="automatic">Santé automatique</SelectItem>
                       <SelectItem value="maintenance">Maintenance</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">L’état en ligne est calculé par le collecteur; il ne peut pas être forcé ici.</p>
                 </div>
               </div>
 
