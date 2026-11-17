@@ -126,6 +126,7 @@ const EditAccessPoint = () => {
             ...f,
             tunnel_status: row.tunnel_status || f.tunnel_status,
             tunnel_ip: row.tunnel_ip || f.tunnel_ip,
+            provisioning_state: row.provisioning_state || f.provisioning_state,
           }));
         },
       )
@@ -189,7 +190,13 @@ const EditAccessPoint = () => {
         id,
         updates,
       });
-      toast({ title: "Access point updated successfully" });
+      const operational = form.provisioning_state === "hotspot_verified" && form.tunnel_status === "connected";
+      toast({
+        title: operational ? "Access point operational" : "Access point saved — router setup incomplete",
+        description: operational
+          ? "WireGuard, RouterOS and Hotspot are verified."
+          : "The K-Zone remains unavailable until all network checks pass.",
+      });
       navigate("/dashboard/k-zones");
     } catch {
       toast({ title: "Failed to update access point", variant: "destructive" });

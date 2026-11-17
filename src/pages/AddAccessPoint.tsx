@@ -134,6 +134,7 @@ const AddAccessPoint = () => {
           const row = payload.new as any;
           if (row.tunnel_status) setTunnelStatus(row.tunnel_status);
           if (row.tunnel_ip) setTunnelIp(row.tunnel_ip);
+          if (row.provisioning_state) setProvisionState(row.provisioning_state);
         },
       )
       .subscribe();
@@ -152,7 +153,13 @@ const AddAccessPoint = () => {
           speed_profile_name: form.speed_profile_name.trim() || null,
         },
       });
-      toast({ title: "Access point added successfully!" });
+      const operational = provisionState === "hotspot_verified" && tunnelStatus === "connected";
+      toast({
+        title: operational ? "Access point operational" : "Access point saved — router setup incomplete",
+        description: operational
+          ? "WireGuard, RouterOS and Hotspot are verified."
+          : "The K-Zone remains unavailable until a handshake, RouterOS and Hotspot are verified.",
+      });
       navigate("/dashboard/k-zones");
     } catch (error: any) {
       toast({ title: error.message || "Failed to save access point", variant: "destructive" });

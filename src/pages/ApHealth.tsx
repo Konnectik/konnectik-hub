@@ -7,29 +7,31 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Skeleton } from '@/components/ui/skeleton';
 import { Activity, Wifi, WifiOff, AlertTriangle, Clock } from 'lucide-react';
 import { useAccessPointsWithHealth, useApHealthHistory, type ApWithHealth } from '@/hooks/use-ap-health';
-import type { ApHealthStatus, ApStatus } from '@/types/database';
+import type { ApAvailabilityStatus } from '@/types/database';
 import { formatDistanceToNow } from 'date-fns';
 
-const healthBadge = (status?: ApHealthStatus) => {
+const healthBadge = (status?: ApAvailabilityStatus) => {
   switch (status) {
-    case 'ok':
+    case 'online':
       return <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-200">Online</Badge>;
-    case 'degraded':
-      return <Badge className="bg-amber-500/15 text-amber-700 border-amber-200">Degraded</Badge>;
-    case 'down':
-      return <Badge variant="destructive">Down</Badge>;
+    case 'offline':
+      return <Badge variant="destructive">Offline</Badge>;
+    case 'maintenance':
+      return <Badge className="bg-amber-500/15 text-amber-700 border-amber-200">Maintenance</Badge>;
+    case 'unknown':
+      return <Badge variant="outline">Unknown</Badge>;
     default:
       return <Badge variant="outline">No data</Badge>;
   }
 };
 
-const statusIcon = (status?: ApHealthStatus) => {
+const statusIcon = (status?: ApAvailabilityStatus) => {
   switch (status) {
-    case 'ok':
+    case 'online':
       return <Wifi className="h-4 w-4 text-emerald-600" />;
-    case 'degraded':
+    case 'maintenance':
       return <AlertTriangle className="h-4 w-4 text-amber-600" />;
-    case 'down':
+    case 'offline':
       return <WifiOff className="h-4 w-4 text-destructive" />;
     default:
       return <Wifi className="h-4 w-4 text-muted-foreground" />;
@@ -37,10 +39,7 @@ const statusIcon = (status?: ApHealthStatus) => {
 };
 
 const effectiveHealth = (ap: ApWithHealth) => {
-  if (ap?.availability_status === 'online') return 'ok' as const;
-  if (ap?.availability_status === 'offline') return 'down' as const;
-  if (ap?.availability_status === 'maintenance' || ap?.availability_status === 'unknown') return 'degraded' as const;
-  return ap?.latest_health?.status;
+  return ap?.availability_status ?? 'unknown';
 };
 
 const ApHealth = () => {
@@ -52,10 +51,10 @@ const ApHealth = () => {
 
   const counts = {
     total: aps?.length ?? 0,
-    online: aps?.filter((ap) => effectiveHealth(ap) === 'ok').length ?? 0,
-    degraded: aps?.filter((ap) => effectiveHealth(ap) === 'degraded').length ?? 0,
-    down: aps?.filter((ap) => effectiveHealth(ap) === 'down').length ?? 0,
-    noData: aps?.filter((ap) => !ap.availability_checked_at && !ap.latest_health).length ?? 0,
+    online: aps?.filter((ap) => effectiveHealth(ap) === 'online').length ?? 0,
+    maintenance: aps?.filter((ap) => effectiveHealth(ap) === 'maintenance').length ?? 0,
+    offline: aps?.filter((ap) => effectiveHealth(ap) === 'offline').length ?? 0,
+    unknown: aps?.filter((ap) => effectiveHealth(ap) === 'unknown').length ?? 0,
   };
 
   return (
@@ -66,7 +65,7 @@ const ApHealth = () => {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card>
           <CardContent className="pt-6 text-center">
             <p className="text-3xl font-bold">{counts.total}</p>
@@ -81,14 +80,20 @@ const ApHealth = () => {
         </Card>
         <Card>
           <CardContent className="pt-6 text-center">
-            <p className="text-3xl font-bold text-amber-600">{counts.degraded}</p>
-            <p className="text-sm text-muted-foreground">Degraded</p>
+            <p className="text-3xl font-bold text-amber-600">{counts.maintenance}</p>
+            <p className="text-sm text-muted-foreground">Maintenance</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6 text-center">
-            <p className="text-3xl font-bold text-destructive">{counts.down}</p>
-            <p className="text-sm text-muted-foreground">Down</p>
+            <p className="text-3xl font-bold text-destructive">{counts.offline}</p>
+            <p className="text-sm text-muted-foreground">Offline</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6 text-center">
+            <p className="text-3xl font-bold text-slate-500">{counts.unknown}</p>
+            <p className="text-sm text-muted-foreground">Unknown</p>
           </CardContent>
         </Card>
       </div>
