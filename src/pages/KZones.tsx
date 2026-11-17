@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { effectiveAvailability } from "@/lib/ap-availability";
+import { useRouterProvisioningInterventions } from "@/hooks/use-router-provisioning-interventions";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -20,6 +21,7 @@ const statusColor: Record<string, string> = {
 const KZones = () => {
   const navigate = useNavigate();
   const { data: accessPoints = [], isLoading } = useAccessPoints();
+  const { data: interventions = [] } = useRouterProvisioningInterventions();
   const [mapAp, setMapAp] = useState<{ name: string; lat: number; lng: number } | null>(null);
 
   return (
@@ -32,6 +34,11 @@ const KZones = () => {
               <p className="text-sm text-muted-foreground">
                 {accessPoints.length} access point{accessPoints.length !== 1 ? "s" : ""}
               </p>
+              {interventions.length > 0 && (
+                <p className="text-sm text-amber-600 mt-1">
+                  {interventions.length} intervention{interventions.length !== 1 ? "s" : ""} réseau ouverte{interventions.length !== 1 ? "s" : ""}, dont {interventions.filter((item) => !item.ap_id).length} sans K-Zone associée.
+                </p>
+              )}
             </div>
             <Button onClick={() => navigate("/dashboard/k-zones/add")}>
               <Plus size={16} className="mr-2" />
@@ -67,6 +74,7 @@ const KZones = () => {
                     const lat = ap.latitude;
                     const lng = ap.longitude;
                     const availability = effectiveAvailability(ap);
+                    const apInterventions = interventions.filter((item) => item.ap_id === ap.id);
                     return (
                       <tr
                         key={ap.id}
@@ -120,6 +128,11 @@ const KZones = () => {
                           <div className="text-xs text-muted-foreground">
                             {ap.tunnel_status === "connected" ? "Handshake observé" : "Tunnel non connecté"}
                           </div>
+                          {apInterventions.map((item) => (
+                            <Badge key={item.id} variant="outline" className="mt-1 mr-1 text-amber-700 border-amber-300">
+                              {item.reason}
+                            </Badge>
+                          ))}
                         </td>
                         <td className="py-4 px-4">
                           <div className="text-sm font-semibold">{date.toLocaleDateString()}</div>
