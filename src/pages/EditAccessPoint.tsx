@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, ArrowRight, Save, Trash2, MapPin } from "lucide-react";
+import { ArrowLeft, ArrowRight, Save, Trash2, MapPin, KeyRound } from "lucide-react";
 import { useAccessPoints, useUpdateAccessPoint, useDeleteAccessPoint } from "@/hooks/use-access-points";
 import { useProviders } from "@/hooks/use-providers";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +24,9 @@ const EditAccessPoint = () => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [step, setStep] = useState(1);
   const provisionedRef = useRef(false);
+  const [rotateOpen, setRotateOpen] = useState(false);
+  const [rotating, setRotating] = useState(false);
+  const [credentialCommand, setCredentialCommand] = useState("");
 
   const ap = accessPoints.find((a) => a.id === id);
 
@@ -203,6 +206,28 @@ const EditAccessPoint = () => {
     }
   };
 
+  // Issues a new per-AP RouterOS password for the relay. The stored password
+  // is replaced immediately, so the returned block must be pasted on the router.
+  const handleRotateCredentials = async () => {
+    if (!id) return;
+    setRotating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("provision-router", {
+        body: { ap_id: id, action: "rotate_router_credentials" },
+      });
+      if (error) throw error;
+      if (!data?.command) throw new Error("No command returned");
+      setCredentialCommand(data.command);
+      setRotateOpen(false);
+      toast({ title: "Router API credentials issued", description: "Paste the block below in the router terminal now." });
+    } catch (e: unknown) {
+      const description = e instanceof Error ? e.message : undefined;
+      toast({ title: "Failed to issue router credentials", description, variant: "destructive" });
+    } finally {
+      setRotating(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!id) return;
     try {
@@ -349,6 +374,40 @@ const EditAccessPoint = () => {
                 </Button>
               </div>
 
+              {/* Per-AP RouterOS credentials used by the relay */}
+              <div className="space-y-2 p-3 rounded-lg border border-border">
+                <Label>Router API credentials</Label>
+                <p className="text-xs text-muted-foreground">
+                  The relay signs in to this router with its own password. Issue new credentials if the router
+                  was reset or reconfigured, or if its status shows a 401 error.
+                </p>
+                {credentialCommand ? (
+                  <>
+                    <div className="bg-muted rounded-lg p-4 font-mono text-xs whitespace-pre-wrap break-all border border-border leading-relaxed">
+                      {credentialCommand}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Shown only once. The relay already uses this password: paste it in the router terminal now.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(credentialCommand);
+                        toast({ title: "Credential commands copied to clipboard" });
+                      }}
+                    >
+                      Copy credential commands
+                    </Button>
+                  </>
+                ) : (
+                  <Button type="button" variant="outline" size="sm" onClick={() => setRotateOpen(true)}>
+                    <KeyRound size={14} className="mr-2" /> Issue router API credentials
+                  </Button>
+                )}
+              </div>
+
               {/* Tunnel status indicator */}
               <div className="flex items-center gap-3 p-3 rounded-lg border border-border">
                 <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
@@ -442,6 +501,24 @@ const EditAccessPoint = () => {
           )}
         </div>
       </div>
+
+      <Dialog open={rotateOpen} onOpenChange={setRotateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Issue router API credentials</DialogTitle>
+            <DialogDescription>
+              A new password replaces the current one for "{ap.zone_label}". The relay switches to it within a
+              minute, so the router stays unreachable until you paste the generated block in its terminal.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+            <Button onClick={handleRotateCredentials} disabled={rotating}>
+              {rotating ? "Issuing..." : "Issue credentials"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent>
